@@ -56,6 +56,7 @@
     char* getType(char* var_name);
     bool validType(char* return_value);
     int reDeclared(char* var_name, char* var_type);
+    void printmsg(char* type);
 %}
 %error-verbose
 /* Use variable or self-defined structure to represent
@@ -172,7 +173,14 @@ DeclarationStmt
         }   
     }
     | Type IDENT ASSIGN Expression {          
-        insert_symbol($2, $1, yylineno, "-");
+        insert_symbol($2, $1, yylineno, "-");        
+        if(!strcmp($1,"int")){
+            codegen("istore %d\n", lookup_symbol($2));
+        }
+        if(!strcmp($1,"float")){
+            codegen("fstore %d\n", lookup_symbol($2));
+        }
+        
     }    
 ;
 
@@ -254,25 +262,65 @@ ArithmeticExpr
         if(strcmp($1,$3) != 0){
             printf("error:%d: invalid operation: ADD (mismatched types %s and %s)\n", yylineno, $1, $3);
         }
-        printf("ADD\n");        
+        printf("ADD\n");
+        if(!strcmp($1, "int")){
+            codegen("iadd \n");
+            printmsg("int");
+        }
+        if(!strcmp($1, "float")){
+            codegen("fadd \n");
+            printmsg("float");
+        }        
     }
     | Expression SUB Expression {
         if(strcmp($1,$3) != 0){
             printf("error:%d: invalid operation: SUB (mismatched types %s and %s)\n", yylineno, $1, $3);
         }
-        printf("SUB\n");        
+        printf("SUB\n");
+        if(!strcmp($1, "int")){
+            codegen("isub \n");
+            printmsg("int");
+        }
+        if(!strcmp($1, "float")){
+            codegen("fsub \n");
+            printmsg("float");
+        }      
     }
     | Expression MUL Expression {
-        printf("MUL\n");        
+        printf("MUL\n");
+        if(!strcmp($1, "int")){
+            codegen("imul \n");
+            printmsg("int");
+        }
+        if(!strcmp($1, "float")){
+            codegen("fmul \n");
+            printmsg("float");
+        }     
     }
     | Expression QUO Expression {
-        printf("QUO\n");        
+        printf("QUO\n");
+        if(!strcmp($1, "int")){
+            codegen("idiv \n");
+            printmsg("int");
+        }
+        if(!strcmp($1, "float")){
+            codegen("fdiv \n");
+            printmsg("float");
+        }  
     }
     | Expression REM Expression {
         if(!strcmp($1,"float")|| !strcmp($3,"float")){
             printf("error:%d: invalid operation: (operator REM not defined on float)\n", yylineno);
         }
-        printf("REM\n");        
+        printf("REM\n");
+        if(!strcmp($1, "int")){
+            codegen("irem \n");
+            printmsg("int");
+        }
+        if(!strcmp($1, "float")){
+            codegen("frem \n");
+            printmsg("float");
+        }       
     }
 ;
 
@@ -380,7 +428,7 @@ TermExpr
         printf("DEC\n");
     }
     | ADD Num {          
-        printf("POS\n");
+        printf("POS\n");        
         $$ = $2;        
     }
     | SUB Num {        
@@ -396,10 +444,12 @@ TermExpr
 Num
     : INT_LIT {         
         printf("INT_LIT %d\n", $1);
+        codegen("ldc %d\n",$1);
         $$ = "int";
     }
     | FLOAT_LIT {         
         printf("FLOAT_LIT %f\n", $1);
+        codegen("ldc %f\n",$1);
         $$ = "float";
     }
 ;
@@ -412,6 +462,13 @@ ID
         else{
             printf("IDENT (name=%s, address=%d)\n", $1, lookup_symbol($1));
             $$ = getType($1);
+            if(!strcmp(getType($1), "int")){
+                codegen("iload %d\n",lookup_symbol($1));
+            }
+            if(!strcmp(getType($1), "float")){
+                codegen("fload %d\n",lookup_symbol($1));
+            }
+            
         }                
     }
 ;
@@ -649,4 +706,17 @@ bool validType(char* return_value){
         return true;    
     else
         return false;
+}
+
+void printmsg(char* type){
+    if(!strcmp(type, "int")){
+        codegen("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
+        codegen("swap\n");
+        codegen("invokevirtual java/io/PrintStream/println(I)V\n");
+    }
+    if(!strcmp(type, "float")){
+        codegen("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
+        codegen("swap\n");
+        codegen("invokevirtual java/io/PrintStream/println(F)V\n");
+    }
 }
