@@ -138,7 +138,7 @@ PrintStmt
     : PRINT Bracket {
         if(!strcmp($2,"TRUE") || !strcmp($2,"FALSE")){
             printf("PRINT bool\n");
-        }        
+        }
         printmsg($2);
     }
 
@@ -791,23 +791,25 @@ void printmsg(char* type){
         codegen("swap\n");
         codegen("invokevirtual java/io/PrintStream/println(F)V\n");
     }    
-    else if(!strcmp(type, "TRUE")){
+    else if(!strcmp(type, "TRUE") || !strcmp(type, "FALSE")){
         compare_level++;
+        /* codegen("iconst_1\n"); */
         codegen("ifne L_cmp_%d\n",compare_level);
-        codegen("ldc \"false\"\n");
+        codegen("ldc \"false\"\n");        
         codegen("goto L_cmp_%d\n",compare_level+1);
 
         INDENT--;
         codegen("L_cmp_%d:\n",compare_level);
         INDENT++;
-        codegen("ldc \"true\"\n");
+        
+        codegen("ldc \"true\"\n");        
 
         INDENT--;
         codegen("L_cmp_%d:\n",compare_level+1);
         INDENT++;
         codegen("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
         codegen("swap\n");
-        codegen("invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V\n\n");                
+        codegen("invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V\n");                                
     }
     /* else{
         codegen("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
