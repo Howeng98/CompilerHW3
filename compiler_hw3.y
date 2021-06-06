@@ -24,7 +24,9 @@
     int address = 0;
     char arithmetic[5];
     int index_in_each_scope[5] = {0};
-
+    char var_name[10];
+    int compare_level = 0;
+    bool current_state = false;
 
     void yyerror (char const *s)
     {
@@ -82,7 +84,8 @@
 %token TRUE FALSE
 
 /* Precedence of derivation of token */
-%right LOR LAND
+%right LOR 
+%right LAND
 %left LSS GTR GEQ LEQ NEQ EQL
 %left ASSIGN
 // cannot put MUL QUO REM in the same line with ADD SUB, different line show different precedence
@@ -132,8 +135,11 @@ Statement
 ;
 
 PrintStmt
-    : PRINT Bracket {        
-        printf("PRINT %s\n", $2);       
+    : PRINT Bracket {
+        if(!strcmp($2,"TRUE") || !strcmp($2,"FALSE")){
+            printf("PRINT bool\n");
+        }        
+        printmsg($2);
     }
 
 ;
@@ -200,10 +206,10 @@ Type
 ;
 Expression
     : AssignmentExpr 
-    | ArithmeticExpr {$$ = $$;}
-    | ConversionExpr {$$ = $$;}
-    | TermExpr { $$ = $$; }
-    | BoolExpr { $$ = "bool"; }    
+    | ArithmeticExpr {$$ = $1;}
+    | ConversionExpr {$$ = $1;}
+    | TermExpr { $$ = $1; }
+    | BoolExpr { $$ = $1; }    
 ;
 AssignmentExpr
     : ID ASSIGN Expression {
@@ -265,11 +271,11 @@ ArithmeticExpr
         printf("ADD\n");
         if(!strcmp($1, "int")){
             codegen("iadd \n");
-            printmsg("int");
+            // printmsg("int");
         }
         if(!strcmp($1, "float")){
             codegen("fadd \n");
-            printmsg("float");
+            // printmsg("float");
         }        
     }
     | Expression SUB Expression {
@@ -279,33 +285,33 @@ ArithmeticExpr
         printf("SUB\n");
         if(!strcmp($1, "int")){
             codegen("isub \n");
-            printmsg("int");
+            // printmsg("int");
         }
         if(!strcmp($1, "float")){
             codegen("fsub \n");
-            printmsg("float");
+            // printmsg("float");
         }      
     }
     | Expression MUL Expression {
         printf("MUL\n");
         if(!strcmp($1, "int")){
             codegen("imul \n");
-            printmsg("int");
+            // printmsg("int");
         }
         if(!strcmp($1, "float")){
             codegen("fmul \n");
-            printmsg("float");
+            // printmsg("float");
         }     
     }
     | Expression QUO Expression {
         printf("QUO\n");
         if(!strcmp($1, "int")){
             codegen("idiv \n");
-            printmsg("int");
+            // printmsg("int");
         }
         if(!strcmp($1, "float")){
             codegen("fdiv \n");
-            printmsg("float");
+            // printmsg("float");
         }  
     }
     | Expression REM Expression {
@@ -315,11 +321,11 @@ ArithmeticExpr
         printf("REM\n");
         if(!strcmp($1, "int")){
             codegen("irem \n");
-            printmsg("int");
+            // printmsg("int");
         }
         if(!strcmp($1, "float")){
             codegen("frem \n");
-            printmsg("float");
+            // printmsg("float");
         }       
     }
 ;
@@ -342,35 +348,62 @@ BoolExpr
 
 LogicalExpr
     : Expression LOR Expression {
-        if(strcmp($1, "bool") != 0){
+        if((strcmp($1, "TRUE") != 0) && (strcmp($1,"FALSE"))){
             printf("error:%d: invalid operation: (operator OR not defined on %s)\n", yylineno, $1);
         }
-        else if(strcmp($3, "bool") != 0){
+        else if((strcmp($3, "TRUE") != 0) && (strcmp($3,"FALSE"))){
             printf("error:%d: invalid operation: (operator OR not defined on %s)\n", yylineno, $3);
         }
         $$ = $1;
         printf("OR\n");
+        codegen("ior\n");
     }
     | Expression LAND Expression {
-        if(strcmp($1, "bool") != 0){
+        if((strcmp($1, "TRUE") != 0) && (strcmp($1,"FALSE"))){
             printf("error:%d: invalid operation: (operator AND not defined on %s)\n", yylineno, $1);
         }
-        else if(strcmp($3, "bool") != 0){
+        else if((strcmp($3, "TRUE") != 0) && (strcmp($3,"FALSE"))){
             printf("error:%d: invalid operation: (operator AND not defined on %s)\n", yylineno, $3);
         }
         $$ = $1;
         printf("AND\n");
+        codegen("iand\n");
     }
 ;
 
 CompareExpr
-    : Expression GTR Expression {
-        $$ = $1;
+    : Expression GTR Expression {        
         printf("GTR\n");
+        codegen("isub \n");
+        compare_level++;
+        codegen("ifgt L_cmp_%d\n",compare_level);
+        // if not greater than zero (less than or equal)
+        codegen("iconst_0\n"); //return FALSE 0
+        current_state = false;
+        codegen("goto L_cmp_%d\n",compare_level+1);
+        // if greater than zero
+        // Print step of L_cmp_compare_level
+        INDENT--;
+        codegen("L_cmp_%d:\n",compare_level);
+        INDENT++;
+        codegen("iconst_1\n");  //return TRUE 1       
+        current_state = true;
+        INDENT--;
+        compare_level++;
+        codegen("L_cmp_%d:\n\n",compare_level); //do nothing
+        INDENT++;
+        if(current_state){
+            $$ = "TRUE";
+        }
+        else if(!current_state){
+            $$ = "FALSE";
+        }
+        
     }
     | Expression LSS Expression { 
-        $$ = $1;
+        
         printf("LSS\n"); 
+        $$ = $1;
     }
     | Expression GEQ Expression { 
         $$ = $1;
@@ -392,12 +425,14 @@ CompareExpr
 
 Bool
     : TRUE {
-        $$ = "bool";
-        printf("TRUE\n");        
+        $$ = "TRUE";
+        printf("TRUE\n");
+        codegen("iconst_1 \n");
     }
     | FALSE { 
-        $$ = "bool";
-        printf("FALSE\n");        
+        $$ = "FALSE";
+        printf("FALSE\n");
+        codegen("iconst_0 \n");   
     }
 ;
 
@@ -423,20 +458,54 @@ TermExpr
     }
     | TermExpr INC {
         printf("INC\n");
+        if(!strcmp($1, "int")){
+            codegen("iload %d\n", lookup_symbol(var_name));
+            codegen("ldc 1\n");
+            codegen("iadd \n");        
+            codegen("istore %d\n", lookup_symbol(var_name));        
+        }
+        if(!strcmp($1, "float")){
+            codegen("fload %d\n", lookup_symbol(var_name));
+            codegen("ldc 1.000000\n");
+            codegen("fadd \n");        
+            codegen("fstore %d\n", lookup_symbol(var_name));        
+        }
+        
     }
     | TermExpr DEC {
         printf("DEC\n");
+        if(!strcmp($1, "int")){
+            codegen("iload %d\n", lookup_symbol(var_name));
+            codegen("ldc 1\n");
+            codegen("isub \n");        
+            codegen("istore %d\n", lookup_symbol(var_name));        
+        }
+        if(!strcmp($1, "float")){
+            codegen("fload %d\n", lookup_symbol(var_name));
+            codegen("ldc 1.000000\n");
+            codegen("fsub \n");        
+            codegen("fstore %d\n", lookup_symbol(var_name));        
+        }
     }
     | ADD Num {          
-        printf("POS\n");        
-        $$ = $2;        
+        printf("POS\n");              
+        $$ = $2;
     }
     | SUB Num {        
-        printf("NEG\n");        
+        printf("NEG\n"); 
+        if(!strcmp($2, "int")){
+            codegen("ineg \n");            
+        }
+        if(!strcmp($2, "float")){            
+            codegen("fneg \n");
+        }                       
         $$ = $2;        
     } 
     | NOT Expression {
         printf("NOT\n");
+        // exclusive or (XOR)
+        codegen("iconst_1 \n");
+        codegen("ixor \n");
         $$ = $2;
     }    
 ;
@@ -461,6 +530,9 @@ ID
         }
         else{
             printf("IDENT (name=%s, address=%d)\n", $1, lookup_symbol($1));
+            strcpy(var_name,$1);
+            // $<id>$ = $1;
+            // $<type>$ = getType($1);
             $$ = getType($1);
             if(!strcmp(getType($1), "int")){
                 codegen("iload %d\n",lookup_symbol($1));
@@ -708,15 +780,38 @@ bool validType(char* return_value){
         return false;
 }
 
-void printmsg(char* type){
-    if(!strcmp(type, "int")){
+void printmsg(char* type){    
+    if(!strcmp(type, "int")){        
         codegen("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
         codegen("swap\n");
         codegen("invokevirtual java/io/PrintStream/println(I)V\n");
     }
-    if(!strcmp(type, "float")){
+    else if(!strcmp(type, "float")){
         codegen("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
         codegen("swap\n");
         codegen("invokevirtual java/io/PrintStream/println(F)V\n");
+    }    
+    else if(!strcmp(type, "TRUE")){
+        compare_level++;
+        codegen("ifne L_cmp_%d\n",compare_level);
+        codegen("ldc \"false\"\n");
+        codegen("goto L_cmp_%d\n",compare_level+1);
+
+        INDENT--;
+        codegen("L_cmp_%d:\n",compare_level);
+        INDENT++;
+        codegen("ldc \"true\"\n");
+
+        INDENT--;
+        codegen("L_cmp_%d:\n",compare_level+1);
+        INDENT++;
+        codegen("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
+        codegen("swap\n");
+        codegen("invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V\n\n");                
     }
+    /* else{
+        codegen("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
+        codegen("swap\n");
+        codegen("invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V\n");  
+    } */
 }
