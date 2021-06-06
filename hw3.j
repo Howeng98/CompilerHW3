@@ -61,7 +61,7 @@ L_cmp_3:
 L_cmp_4:
 	getstatic java/lang/System/out Ljava/io/PrintStream;
 	swap
-	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
+	invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V
 
 	ldc 3.000000
 	ldc 4.000000
@@ -92,7 +92,7 @@ L_cmp_4:
 	fsub 
 	ldc 4.000000
 	fneg 
-	isub 
+	fcmpl 
 	ifgt L_cmp_4
 	iconst_0
 	goto L_cmp_5
@@ -100,16 +100,6 @@ L_cmp_4:
 	iconst_1
 L_cmp_5:
 
-	iconst_1 
-	iconst_1 
-	ixor 
-	iconst_0 
-	iconst_1 
-	ixor 
-	iconst_1 
-	ixor 
-	iand
-	ior
 	ifne L_cmp_6
 	ldc "false"
 	goto L_cmp_7
@@ -118,7 +108,7 @@ L_cmp_6:
 L_cmp_7:
 	getstatic java/lang/System/out Ljava/io/PrintStream;
 	swap
-	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
+	invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V
 
 	return
 .end method

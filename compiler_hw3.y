@@ -348,33 +348,51 @@ BoolExpr
 
 LogicalExpr
     : Expression LOR Expression {
-        if((strcmp($1, "TRUE") != 0) && (strcmp($1,"FALSE"))){
+        if((strcmp($1, "TRUE") != 0) && (strcmp($1,"FALSE") != 0)){
             printf("error:%d: invalid operation: (operator OR not defined on %s)\n", yylineno, $1);
         }
-        else if((strcmp($3, "TRUE") != 0) && (strcmp($3,"FALSE"))){
+        else if((strcmp($3, "TRUE") != 0) && (strcmp($3,"FALSE") != 0)){
             printf("error:%d: invalid operation: (operator OR not defined on %s)\n", yylineno, $3);
         }
+        // printf("LOR!!!! %s\n",$1);
+        // printf("LOR!!!! %s\n",$3);
         $$ = $1;
         printf("OR\n");
         codegen("ior\n");
     }
     | Expression LAND Expression {
-        if((strcmp($1, "TRUE") != 0) && (strcmp($1,"FALSE"))){
+        if((strcmp($1, "TRUE") != 0) && (strcmp($1,"FALSE")  != 0)){
             printf("error:%d: invalid operation: (operator AND not defined on %s)\n", yylineno, $1);
         }
-        else if((strcmp($3, "TRUE") != 0) && (strcmp($3,"FALSE"))){
+        else if((strcmp($3, "TRUE") != 0) && (strcmp($3,"FALSE") != 0)){
             printf("error:%d: invalid operation: (operator AND not defined on %s)\n", yylineno, $3);
         }
         $$ = $1;
+        // printf("LAND!!!! %s\n",$1);
+        // printf("LAND!!!! %s\n",$3);
         printf("AND\n");
         codegen("iand\n");
     }
 ;
 
 CompareExpr
-    : Expression GTR Expression {        
+    : Expression GTR Expression {   
+        current_state = false;     
         printf("GTR\n");
-        codegen("isub \n");
+        if(!strcmp($1,"int")){
+            codegen("isub \n");
+        }
+        else if(!strcmp($1,"float")){
+            codegen("fcmpl \n");
+        }
+        else{
+            if(!strcmp(getType(var_name), "int")){
+                codegen("isub \n");
+            }
+            else if(!strcmp(getType(var_name), "float")){
+                codegen("fcmpl \n");
+            }
+        }        
         compare_level++;
         codegen("ifgt L_cmp_%d\n",compare_level);
         // if not greater than zero (less than or equal)
@@ -503,10 +521,16 @@ TermExpr
     } 
     | NOT Expression {
         printf("NOT\n");
+        if(current_state){
+            $$ = "FALSE";
+        }
+        else{
+            $$ = "TRUE";
+        }
         // exclusive or (XOR)
         codegen("iconst_1 \n");
         codegen("ixor \n");
-        $$ = $2;
+        // $$ = $2;
     }    
 ;
 
@@ -809,7 +833,7 @@ void printmsg(char* type){
         INDENT++;
         codegen("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
         codegen("swap\n");
-        codegen("invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V\n");                                
+        codegen("invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V\n\n");                                
     }
     /* else{
         codegen("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
