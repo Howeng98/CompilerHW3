@@ -27,6 +27,7 @@
     char var_name[10];
     int compare_level = 0;
     bool current_state = false;
+    bool newline = false;
 
     void yyerror (char const *s)
     {
@@ -73,13 +74,14 @@
     char *type;   
 }
 /* Token without return */
+%token NEWLINE
 %token ADD SUB MUL QUO REM
 %token INT FLOAT BOOL STRING
 %token INC DEC
 %token GEQ LEQ EQL NEQ LSS GTR
 %token ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN QUO_ASSIGN REM_ASSIGN
 %token LAND LOR NOT
-%token SEMICOLON
+%token SEMICOLON 
 %token IF ELSE WHILE FOR PRINT
 %token TRUE FALSE
 
@@ -132,6 +134,7 @@ Statement
     | IfStmt
     | Expression
     | LoopStmt
+    | NEWLINE
 ;
 
 PrintStmt
@@ -169,7 +172,16 @@ DeclarationStmt
             insert_symbol($2, $1, yylineno, "-");
         }else{
             printf("error:%d: %s redeclared in this block. previous declaration at line %d\n", yylineno, $2, reDeclared($2, $1));
-        }   
+        }
+
+        if(!strcmp($1,"int")){
+            codegen("ldc 0 \n");
+            codegen("istore %d\n", lookup_symbol($2));
+        }
+        if(!strcmp($1,"float")){
+            codegen("ldc 0.000000 \n");
+            codegen("fstore %d\n", lookup_symbol($2));
+        } 
     }
     | Type IDENT '[' Expression ']' {        
         if(reDeclared($2, $1)==-1){
@@ -186,7 +198,12 @@ DeclarationStmt
         if(!strcmp($1,"float")){
             codegen("fstore %d\n", lookup_symbol($2));
         }
-        
+        if(!strcmp($1,"string")){
+            codegen("astore %d\n", lookup_symbol($2));
+        }
+        if(!strcmp($1,"bool")){
+            codegen("astore %d\n", lookup_symbol($2));
+        }
     }    
 ;
 
@@ -219,6 +236,13 @@ AssignmentExpr
             }
         }        
         printf("ASSIGN\n");
+        if(!strcmp($1,"int") && !strcmp($3,"int")){
+            codegen("istore %d\n",lookup_symbol(var_name));
+        }
+        else if(!strcmp($1,"float") && !strcmp($3,"float")){
+            codegen("fstore %d\n",lookup_symbol(var_name));
+        }
+        
     }        
     | ID '[' Expression ']' ASSIGN Expression {                 
         printf("ASSIGN\n");
@@ -463,6 +487,11 @@ TermExpr
     }
     | STRING_LIT {        
         printf("STRING_LIT %s\n", $1);
+        if(!strcmp($1, "\n"))
+            newline = true;        
+        else
+            newline = false;
+        codegen("ldc \"%s\" \n",$1);
         $$ = "string";
     }
     | Num {
@@ -493,13 +522,13 @@ TermExpr
     | TermExpr DEC {
         printf("DEC\n");
         if(!strcmp($1, "int")){
-            codegen("iload %d\n", lookup_symbol(var_name));
+            // codegen("iload %d\n", lookup_symbol(var_name));
             codegen("ldc 1\n");
             codegen("isub \n");        
             codegen("istore %d\n", lookup_symbol(var_name));        
         }
         if(!strcmp($1, "float")){
-            codegen("fload %d\n", lookup_symbol(var_name));
+            // codegen("fload %d\n", lookup_symbol(var_name));
             codegen("ldc 1.000000\n");
             codegen("fsub \n");        
             codegen("fstore %d\n", lookup_symbol(var_name));        
@@ -557,12 +586,20 @@ ID
             strcpy(var_name,$1);
             // $<id>$ = $1;
             // $<type>$ = getType($1);
+            
             $$ = getType($1);
+            printf("IDENT type:%s\n",$$);
             if(!strcmp(getType($1), "int")){
                 codegen("iload %d\n",lookup_symbol($1));
             }
             if(!strcmp(getType($1), "float")){
                 codegen("fload %d\n",lookup_symbol($1));
+            }
+            if(!strcmp(getType($1), "string")){
+                codegen("aload %d\n",lookup_symbol($1));
+            }
+            if(!strcmp(getType($1), "bool")){
+                codegen("aload %d\n",lookup_symbol($1));
             }
             
         }                
@@ -756,8 +793,9 @@ char* getType(char* var_name){
                 if(!strcmp(current->type, "array")){
                     return current->element_type;
                 }                
-                else
+                else{
                     return current->type;
+                }
             }
             current = current->next;
         }
@@ -767,8 +805,9 @@ char* getType(char* var_name){
             if(!strcmp(current->type, "array")){
                 return current->element_type;
             }                
-            else
+            else{
                 return current->type;
+            }                
         }        
     }
     return NULL;
@@ -808,14 +847,14 @@ void printmsg(char* type){
     if(!strcmp(type, "int")){        
         codegen("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
         codegen("swap\n");
-        codegen("invokevirtual java/io/PrintStream/println(I)V\n");
+        codegen("invokevirtual java/io/PrintStream/print(I)V\n");
     }
     else if(!strcmp(type, "float")){
         codegen("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
         codegen("swap\n");
-        codegen("invokevirtual java/io/PrintStream/println(F)V\n");
-    }    
-    else if(!strcmp(type, "TRUE") || !strcmp(type, "FALSE")){
+        codegen("invokevirtual java/io/PrintStream/print(F)V\n");
+    }
+    else if(!strcmp(type, "TRUE") || !strcmp(type, "FALSE") || !strcmp(type, "bool")){
         compare_level++;
         /* codegen("iconst_1\n"); */
         codegen("ifne L_cmp_%d\n",compare_level);
@@ -833,11 +872,19 @@ void printmsg(char* type){
         INDENT++;
         codegen("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
         codegen("swap\n");
-        codegen("invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V\n\n");                                
+        codegen("invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V\n\n");
     }
-    /* else{
-        codegen("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
-        codegen("swap\n");
-        codegen("invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V\n");  
-    } */
+    else if(!strcmp(type, "string")){
+        if(newline){
+            codegen("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
+            codegen("swap\n");
+            codegen("invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V\n\n");
+        }
+        else{
+            codegen("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
+            codegen("swap\n");
+            codegen("invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V\n");
+        }
+        
+    }    
 }

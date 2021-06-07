@@ -16,7 +16,6 @@ digit [0-9]
 id {letter}+({letter}|{digit})*
 inumber {digit}+
 fnumber ({digit}*\.{digit}+)
-newline		[\n]
 
 %x CMT
 %x STR
@@ -77,6 +76,7 @@ newline		[\n]
 
 ";"          { return SEMICOLON; }
 ","          { return ','; }
+"\n"         { return NEWLINE; }
 
 "if"         { return IF; }
 "else"       { return ELSE; }
@@ -101,7 +101,7 @@ newline		[\n]
 {id}        { yylval.id = strdup(yytext);
                 return IDENT;
             }
-[\n]        {;}
+
 <<EOF>>     { static int once = 0;
                 if (once++) {
                     yyterminate();
