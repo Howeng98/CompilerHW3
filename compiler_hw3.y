@@ -74,7 +74,6 @@
     char *type;   
 }
 /* Token without return */
-%token NEWLINE
 %token ADD SUB MUL QUO REM
 %token INT FLOAT BOOL STRING
 %token INC DEC
@@ -133,8 +132,7 @@ Statement
     | DeclarationStmt
     | IfStmt
     | Expression
-    | LoopStmt
-    | NEWLINE
+    | LoopStmt    
 ;
 
 PrintStmt
@@ -190,8 +188,8 @@ DeclarationStmt
             printf("error:%d: %s redeclared in this block. previous declaration at line %d\n", yylineno, $2, reDeclared($2, "array"));
         }   
     }
-    | Type IDENT ASSIGN Expression {          
-        insert_symbol($2, $1, yylineno, "-");        
+    | Type IDENT ASSIGN Expression {                 
+        insert_symbol($2, $1, yylineno, "-");
         if(!strcmp($1,"int")){
             codegen("istore %d\n", lookup_symbol($2));
         }
@@ -201,8 +199,8 @@ DeclarationStmt
         if(!strcmp($1,"string")){
             codegen("astore %d\n", lookup_symbol($2));
         }
-        if(!strcmp($1,"bool")){
-            codegen("astore %d\n", lookup_symbol($2));
+        if(!strcmp($1,"bool")){            
+            codegen("istore %d\n", lookup_symbol($2));
         }
     }    
 ;
@@ -584,11 +582,9 @@ ID
         else{
             printf("IDENT (name=%s, address=%d)\n", $1, lookup_symbol($1));
             strcpy(var_name,$1);
-            // $<id>$ = $1;
-            // $<type>$ = getType($1);
             
             $$ = getType($1);
-            printf("IDENT type:%s\n",$$);
+            // printf("IDENT type:%s\n",$$);
             if(!strcmp(getType($1), "int")){
                 codegen("iload %d\n",lookup_symbol($1));
             }
@@ -599,7 +595,7 @@ ID
                 codegen("aload %d\n",lookup_symbol($1));
             }
             if(!strcmp(getType($1), "bool")){
-                codegen("aload %d\n",lookup_symbol($1));
+                codegen("iload %d\n",lookup_symbol($1));
             }
             
         }                
@@ -618,12 +614,12 @@ Bracket
         current_scope_level--;
     }
     | WHILE Bracket {
-        if(strcmp($2,"bool")!=0){
+        if(strcmp($2,"bool")!=0 && strcmp($2,"TRUE")!=0 && strcmp($2,"FALSE")){
             printf("error:%d: non-bool (type %s) used as for condition\n", yylineno+1, $2);
         }
     }
     | IF Bracket {
-        if(strcmp($2,"bool")!=0){
+        if(strcmp($2,"bool")!=0 && strcmp($2,"TRUE")!=0 && strcmp($2,"FALSE")){
             printf("error:%d: non-bool (type %s) used as for condition\n", yylineno+1, $2);
         }
     }
@@ -775,21 +771,44 @@ char* getType(char* var_name){
     }
     else{        
         current = head;
-        //FIXME: Try to use the following code to replace getType access linkedlist with go through node content before checking current->next != NULL
-        /* do {
-            if(!strcmp(current->name, var_name)){
-                // If type is array, then return its element_type
+        int temp_scope_level = current_scope_level;
+        // go through the whole linkedList with scope_level == current_scope_level (local variable)
+        while(current->next != NULL){
+            if(!strcmp(current->name, var_name) && (current->scope_level == current_scope_level) && current->printed == 0){
                 if(!strcmp(current->type, "array")){
                     return current->element_type;
                 }                
-                else
+                else{
                     return current->type;
-            }                       
-        } while(current->next != NULL); */
+                }
+            }                                                
+            current = current->next;
+        }                
+        if(!strcmp(current->name, var_name) && (current->scope_level == current_scope_level) && current->printed == 0){
+            if(!strcmp(current->type, "array")){
+                return current->element_type;
+            }                
+            else{
+                return current->type;
+            }
+        }
         
-        while(current->next != NULL){
-            if(!strcmp(current->name, var_name)){
-                // If type is array, then return its element_type
+        // go through the whole linkedList again with scope_level == temp_scope_level (global variable)
+        while(temp_scope_level >= 0){
+            current = head;
+            while(current->next != NULL){
+                /* printf("Loop tracking: scope:%d\n", temp_scope_level); */
+                if(!strcmp(current->name, var_name) && (current->scope_level == temp_scope_level) && current->printed == 0){
+                    if(!strcmp(current->type, "array")){
+                        return current->element_type;
+                    }                
+                    else{
+                        return current->type;
+                    }
+                }
+                current = current->next;
+            }
+            if(!strcmp(current->name, var_name) && (current->scope_level == temp_scope_level) && current->printed == 0){
                 if(!strcmp(current->type, "array")){
                     return current->element_type;
                 }                
@@ -797,17 +816,7 @@ char* getType(char* var_name){
                     return current->type;
                 }
             }
-            current = current->next;
-        }
-        // current->next == NULL
-        if(!strcmp(current->name, var_name)){
-            // If type is array, then return its element_type
-            if(!strcmp(current->type, "array")){
-                return current->element_type;
-            }                
-            else{
-                return current->type;
-            }                
+            temp_scope_level--;
         }        
     }
     return NULL;

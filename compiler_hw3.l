@@ -16,6 +16,7 @@ digit [0-9]
 id {letter}+({letter}|{digit})*
 inumber {digit}+
 fnumber ({digit}*\.{digit}+)
+newline [\n]
 
 %x CMT
 %x STR
@@ -76,7 +77,7 @@ fnumber ({digit}*\.{digit}+)
 
 ";"          { return SEMICOLON; }
 ","          { return ','; }
-"\n"         { return NEWLINE; }
+
 
 "if"         { return IF; }
 "else"       { return ELSE; }
@@ -107,6 +108,7 @@ fnumber ({digit}*\.{digit}+)
                     yyterminate();
                 }
             }
+[\n]        {;}
 [ \t]+      {;}
 .           {;}
 %%

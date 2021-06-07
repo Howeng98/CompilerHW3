@@ -4,21 +4,70 @@
 .method public static main([Ljava/lang/String;)V
 .limit stack 100
 .limit locals 100
-	ldc 3
-	ldc 4
-	ldc 5
-	ldc 8
-	ineg 
-	iadd 
-	imul 
-	isub 
+	ldc 0 
+	istore 0
+	iload 0
+	ldc 0
+	istore 0
+	iload 0
 	ldc 10
-	ldc 7
-	idiv 
-	isub 
+	iload 0
+	iload 0
+	ldc 1
+	iadd 
+	istore 0
+	iload 0
 	getstatic java/lang/System/out Ljava/io/PrintStream;
 	swap
-	invokevirtual java/io/PrintStream/println(I)V
+	invokevirtual java/io/PrintStream/print(I)V
+	ldc "\n" 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
+	iload 0
+	ldc 1
+	istore 0
+	iload 0
+	ldc 0
+	isub 
+	ifgt L_cmp_1
+	iconst_0
+	goto L_cmp_2
+L_cmp_1:
+	iconst_1
+L_cmp_2:
+
+	iload 0
+	ldc 1
+	isub 
+	istore 0
+	ldc 3
+	iload 1
+	ldc 0
+	ldc 1
+	ldc 21
+	iadd 
+	iload 1
+	ldc 1
+	iload 1
+	ldc 0
+	ldc 1
+	isub 
+	iload 1
+	ldc 2
+	iload 1
+	ldc 1
+	ldc 3
+	idiv 
+	iload 1
+	ldc 2
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(I)V
+	ldc "\n" 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
 	ldc 3
 	ldc 4
 	ldc 5
@@ -36,12 +85,12 @@
 	ldc 3
 	irem 
 	isub 
-	ifgt L_cmp_1
+	ifgt L_cmp_3
 	iconst_0
-	goto L_cmp_2
-L_cmp_1:
+	goto L_cmp_4
+L_cmp_3:
 	iconst_1
-L_cmp_2:
+L_cmp_4:
 
 	iconst_1 
 	iconst_1 
@@ -53,62 +102,127 @@ L_cmp_2:
 	ixor 
 	iand
 	ior
-	ifne L_cmp_3
+	ifne L_cmp_5
 	ldc "false"
-	goto L_cmp_4
-L_cmp_3:
-	ldc "true"
-L_cmp_4:
-	getstatic java/lang/System/out Ljava/io/PrintStream;
-	swap
-	invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V
-
-	ldc 3.000000
-	ldc 4.000000
-	ldc 5.000000
-	ldc 8.000000
-	fneg 
-	fadd 
-	fmul 
-	fsub 
-	ldc 10.000000
-	ldc 7.000000
-	fdiv 
-	fsub 
-	getstatic java/lang/System/out Ljava/io/PrintStream;
-	swap
-	invokevirtual java/io/PrintStream/println(F)V
-	ldc 3.000000
-	ldc 4.000000
-	ldc 5.000000
-	ldc 8.000000
-	fneg 
-	fadd 
-	fmul 
-	fsub 
-	ldc 10.000000
-	ldc 7.000000
-	fdiv 
-	fsub 
-	ldc 4.000000
-	fneg 
-	fcmpl 
-	ifgt L_cmp_4
-	iconst_0
-	goto L_cmp_5
-L_cmp_4:
-	iconst_1
+	goto L_cmp_6
 L_cmp_5:
+	ldc "true"
+L_cmp_6:
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
 
-	ifne L_cmp_6
-	ldc "false"
+	ldc "\n" 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
+	ldc 3
+	fload 2
+	ldc 0
+	ldc 1.100000
+	ldc 2.100000
+	fadd 
+	fload 2
+	ldc 0
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(I)V
+	ldc "\n" 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
+	ldc 0 
+	istore 3
+	iload 3
+	ldc 10
+	iload 3
+	ldc 0
+	isub 
+	ifgt L_cmp_6
+	iconst_0
 	goto L_cmp_7
 L_cmp_6:
-	ldc "true"
+	iconst_1
 L_cmp_7:
+
+	iload 3
 	getstatic java/lang/System/out Ljava/io/PrintStream;
 	swap
-	invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V
-
+	invokevirtual java/io/PrintStream/print(I)V
+	ldc "\t" 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
+	iload 3
+	ldc 1
+	isub 
+	istore 3
+	iload 3
+	ldc 0
+	ldc 3.140000
+	fstore 4
+	fload 4
+	iload 3
+	iadd 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(I)V
+	ldc 6.600000
+	fstore 5
+	ldc "If x == " 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
+	ldc 0
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(I)V
+	fload 5
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(F)V
+	ldc 1
+	istore 6
+	iload 6
+	ldc 3
+	ldc "\t" 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
+	iload 3
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(I)V
+	ldc "*" 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
+	iload 6
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(I)V
+	ldc "=" 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
+	iload 3
+	iload 6
+	imul 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(I)V
+	ldc "\t" 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
+	iload 6
+	iload 6
+	ldc 1
+	iadd 
+	istore 6
+	ldc "\n" 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
 	return
 .end method
