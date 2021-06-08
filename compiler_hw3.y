@@ -60,6 +60,7 @@
     bool validType(char* return_value);
     int reDeclared(char* var_name, char* var_type);
     void printmsg(char* type);
+    bool isArray(char* var_name);
 %}
 %error-verbose
 /* Use variable or self-defined structure to represent
@@ -187,6 +188,15 @@ DeclarationStmt
         }else{
             printf("error:%d: %s redeclared in this block. previous declaration at line %d\n", yylineno, $2, reDeclared($2, "array"));
         }   
+
+        if(!strcmp($1,"int")){            
+            codegen("newarray int\n");
+            codegen("astore %d\n", lookup_symbol($2));
+        }
+        if(!strcmp($1,"float")){            
+            codegen("newarray float\n");
+            codegen("astore %d\n", lookup_symbol($2));
+        }
     }
     | Type IDENT ASSIGN Expression {                 
         insert_symbol($2, $1, yylineno, "-");
@@ -244,6 +254,12 @@ AssignmentExpr
     }        
     | ID '[' Expression ']' ASSIGN Expression {                 
         printf("ASSIGN\n");
+        if(!strcmp($1,"int")){
+            codegen("iastore \n");
+        }
+        else if(!strcmp($1,"float")){
+            codegen("fastore \n");
+        }
     }
     | Expression ADD_ASSIGN Expression {        
         printf("ADD_ASSIGN\n");
@@ -481,6 +497,12 @@ TermExpr
         $$ = $1;
     }
     | ID '[' Expression ']' {
+        if(!strcmp($1,"int")){
+            codegen("iaload \n");
+        }
+        else if(!strcmp($1,"float")){
+            codegen("faload \n");
+        }
         $$ = $1;
     }
     | STRING_LIT {        
@@ -585,19 +607,25 @@ ID
             
             $$ = getType($1);
             // printf("IDENT type:%s\n",$$);
-            if(!strcmp(getType($1), "int")){
-                codegen("iload %d\n",lookup_symbol($1));
+            // printf("Lookupsymollllllllllll:%d\n", lookup_symbol($1));
+            if(!isArray($1)){
+                if(!strcmp(getType($1), "int")){
+                    codegen("iload %d\n",lookup_symbol($1));
+                }
+                if(!strcmp(getType($1), "float")){
+                    codegen("fload %d\n",lookup_symbol($1));
+                }
+                if(!strcmp(getType($1), "string")){
+                    codegen("aload %d\n",lookup_symbol($1));
+                }
+                if(!strcmp(getType($1), "bool")){
+                    codegen("iload %d\n",lookup_symbol($1));
+                }
             }
-            if(!strcmp(getType($1), "float")){
-                codegen("fload %d\n",lookup_symbol($1));
-            }
-            if(!strcmp(getType($1), "string")){
+            else{
                 codegen("aload %d\n",lookup_symbol($1));
             }
-            if(!strcmp(getType($1), "bool")){
-                codegen("iload %d\n",lookup_symbol($1));
-            }
-            
+                                            
         }                
     }
 ;
@@ -850,6 +878,56 @@ bool validType(char* return_value){
         return true;    
     else
         return false;
+}
+
+bool isArray(char* var_name){
+    if(head == NULL){
+        perror("isArray error!\n");        
+        exit(EXIT_FAILURE);
+    }
+    else{        
+        current = head;
+        int temp_scope_level = current_scope_level;
+        // go through the whole linkedList with scope_level == current_scope_level (local variable)
+        while(current->next != NULL){
+            if(!strcmp(current->name, var_name) && (current->scope_level == current_scope_level) && current->printed == 0){
+                if(!strcmp(current->type, "array"))
+                    return true;                   
+                else
+                    return false;             
+            }                                                
+            current = current->next;
+        }                
+        if(!strcmp(current->name, var_name) && (current->scope_level == current_scope_level) && current->printed == 0){
+            if(!strcmp(current->type, "array"))
+                return true;                   
+            else
+                return false;
+        }
+        
+        // go through the whole linkedList again with scope_level == temp_scope_level (global variable)
+        while(temp_scope_level >= 0){
+            current = head;
+            while(current->next != NULL){
+                /* printf("Loop tracking: scope:%d\n", temp_scope_level); */
+                if(!strcmp(current->name, var_name) && (current->scope_level == temp_scope_level) && current->printed == 0){
+                    if(!strcmp(current->type, "array"))
+                        return true;                   
+                    else
+                        return false;             
+                }
+                current = current->next;
+            }
+            if(!strcmp(current->name, var_name) && (current->scope_level == temp_scope_level) && current->printed == 0){
+                if(!strcmp(current->type, "array"))
+                    return true;                   
+                else
+                    return false;             
+            }
+            temp_scope_level--;
+        }        
+    }
+    return false;
 }
 
 void printmsg(char* type){    

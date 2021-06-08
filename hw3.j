@@ -42,25 +42,33 @@ L_cmp_2:
 	isub 
 	istore 0
 	ldc 3
-	iload 1
+	newarray int
+	astore 1
+	aload 1
 	ldc 0
 	ldc 1
 	ldc 21
 	iadd 
-	iload 1
+	iastore 
+	aload 1
 	ldc 1
-	iload 1
+	aload 1
 	ldc 0
+	iaload 
 	ldc 1
 	isub 
-	iload 1
+	iastore 
+	aload 1
 	ldc 2
-	iload 1
+	aload 1
 	ldc 1
+	iaload 
 	ldc 3
 	idiv 
-	iload 1
+	iastore 
+	aload 1
 	ldc 2
+	iaload 
 	getstatic java/lang/System/out Ljava/io/PrintStream;
 	swap
 	invokevirtual java/io/PrintStream/print(I)V
@@ -117,13 +125,17 @@ L_cmp_6:
 	swap
 	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
 	ldc 3
-	fload 2
+	newarray float
+	astore 2
+	aload 2
 	ldc 0
 	ldc 1.100000
 	ldc 2.100000
 	fadd 
-	fload 2
+	fastore 
+	aload 2
 	ldc 0
+	faload 
 	getstatic java/lang/System/out Ljava/io/PrintStream;
 	swap
 	invokevirtual java/io/PrintStream/print(I)V
