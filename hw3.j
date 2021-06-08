@@ -136,6 +136,7 @@ L_cmp_6:
 	aload 2
 	ldc 0
 	faload 
+	f2i 
 	getstatic java/lang/System/out Ljava/io/PrintStream;
 	swap
 	invokevirtual java/io/PrintStream/print(I)V
@@ -176,6 +177,7 @@ L_cmp_8:
 	ldc 3.140000
 	fstore 4
 	fload 4
+	f2i 
 	iload 3
 	iadd 
 	getstatic java/lang/System/out Ljava/io/PrintStream;

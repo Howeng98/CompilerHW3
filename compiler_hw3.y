@@ -28,6 +28,9 @@
     int compare_level = 0;
     bool current_state = false;
     bool newline = false;
+    char changedType[10];
+    char specialVar[10];
+    bool isNum = false;
 
     void yyerror (char const *s)
     {
@@ -46,10 +49,26 @@
         char element_type[10];
         struct symbol_table* next;
     };
+
+    struct stack{
+        char name[10];
+        char type[10];
+        struct stack* next;
+        struct stack* prev;
+    };
+
+    // symbol table pointer
     struct symbol_table* head = NULL;
     struct symbol_table* node;
     struct symbol_table* current = NULL;
     struct symbol_table symbol_table[50];
+
+    // stack pointer
+    struct stack* stack_head = NULL;
+    struct stack* stack_node;
+    struct stack* stack_current = NULL;
+
+
     /* Symbol table function - you can add new function if needed. */
     static void create_symbol(void);
     static void insert_symbol(char* var_name, char* var_type, int lineno, char* element);
@@ -61,6 +80,10 @@
     int reDeclared(char* var_name, char* var_type);
     void printmsg(char* type);
     bool isArray(char* var_name);
+    static void push_stack(char* var_name, char* var_type);
+    static void pop_stack(char* var_name);
+    static char* get_TOS(void);
+    
 %}
 %error-verbose
 /* Use variable or self-defined structure to represent
@@ -89,7 +112,7 @@
 %right LOR 
 %right LAND
 %left LSS GTR GEQ LEQ NEQ EQL
-%left ASSIGN
+%right ASSIGN
 // cannot put MUL QUO REM in the same line with ADD SUB, different line show different precedence
 // MUL QUO REM should have deeper level than ADD SUB!
 %left ADD SUB 
@@ -249,10 +272,20 @@ AssignmentExpr
         }        
         printf("ASSIGN\n");
         if(!strcmp($1,"int") && !strcmp($3,"int")){
-            codegen("istore %d\n",lookup_symbol(var_name));
+            if(!strcmp(changedType,"int")){
+                printf("TOS:%s\n",get_TOS());
+                codegen("istore %d\n", lookup_symbol(get_TOS()));
+            }
+            else
+                codegen("istore %d\n",lookup_symbol(var_name));
         }
         else if(!strcmp($1,"float") && !strcmp($3,"float")){
-            codegen("fstore %d\n",lookup_symbol(var_name));
+            if(!strcmp(changedType,"float")){
+                printf("TOS:%s\n",get_TOS());
+                codegen("fstore %d\n", lookup_symbol(get_TOS()));
+            }
+            else
+                codegen("fstore %d\n",lookup_symbol(var_name));
         }
         else if(!strcmp($1,"string") && !strcmp($3,"string")){
             codegen("astore %d\n",lookup_symbol(var_name));
@@ -260,6 +293,8 @@ AssignmentExpr
         else if(!strcmp($1,"bool")){
             codegen("istore %d\n",lookup_symbol(var_name));
         }
+
+        
         
     }        
     | ID '[' Expression ']' ASSIGN Expression {                 
@@ -361,6 +396,8 @@ ArithmeticExpr
             codegen("fadd \n");
             // printmsg("float");
         }        
+        if(var_name != NULL)
+            pop_stack(var_name);
     }
     | Expression SUB Expression {
         if(strcmp($1,$3) != 0){
@@ -417,10 +454,22 @@ ArithmeticExpr
 ConversionExpr
     : '(' INT ')' TermExpr {
         printf("F to I\n");
+        codegen("f2i \n");
+        strcpy(changedType,"int");
+        // if(!isNum)
+        pop_stack(var_name);
+        // else
+        //     isNum = false;
         $$ = "int";
     }
     | '(' FLOAT ')' TermExpr {        
         printf("I to F\n");
+        codegen("i2f \n");
+        strcpy(changedType,"float");        
+        // if(!isNum)
+        pop_stack(var_name);
+        // else
+        //     isNum = false;
         $$ = "float";
     }
 ;
@@ -633,11 +682,17 @@ Num
     : INT_LIT {         
         printf("INT_LIT %d\n", $1);
         codegen("ldc %d\n",$1);
+        // push a useless stack, can ignore
+        push_stack(var_name,"int");
+        isNum = true;
         $$ = "int";
     }
     | FLOAT_LIT {         
         printf("FLOAT_LIT %f\n", $1);
         codegen("ldc %f\n",$1);
+        // push a useless stack, can ignore
+        push_stack(var_name,"float");
+        isNum = true;
         $$ = "float";
     }
 ;
@@ -649,11 +704,11 @@ ID
         }
         else{
             printf("IDENT (name=%s, address=%d)\n", $1, lookup_symbol($1));
+                                    
+            push_stack($1,getType($1));
             strcpy(var_name,$1);
-            
             $$ = getType($1);
-            // printf("IDENT type:%s\n",$$);
-            // printf("Lookupsymollllllllllll:%d\n", lookup_symbol($1));
+            
             if(!isArray($1)){
                 if(!strcmp(getType($1), "int")){
                     codegen("iload %d\n",lookup_symbol($1));
@@ -1022,4 +1077,51 @@ void printmsg(char* type){
         }
         
     }    
+}
+
+static void push_stack(char* var_name, char* var_type){
+    stack_node = (struct stack*)malloc(sizeof(struct stack));
+    strcpy(stack_node->name,var_name);
+    strcpy(stack_node->type,var_type);
+    stack_node->next = NULL;
+
+    if(stack_head == NULL){
+        stack_head = stack_node;
+        stack_node->prev = NULL;
+    }
+    else{
+        stack_current = stack_head;
+        while(stack_current->next != NULL){
+            stack_current = stack_current->next;            
+        }
+        stack_node->prev = stack_current;
+        stack_current->next = stack_node;
+    }
+}
+
+static void pop_stack(char* var_name){
+    if(head == NULL){        
+        return;
+    }
+    else{
+        stack_current = stack_head;
+        while(stack_current->next != NULL){
+            stack_current = stack_current->next;
+        }
+        // check the Top of Stack's name is same with var_name, if yes then pop
+        stack_current->prev->next = NULL;            
+    }
+}
+
+static char* get_TOS(void){
+    if(head == NULL){        
+        return NULL;
+    }
+    else{
+        stack_current = stack_head;
+        while(stack_current->next != NULL){
+            stack_current = stack_current->next;
+        }
+        return stack_current->name;
+    }
 }
