@@ -766,6 +766,7 @@ ID
     : IDENT {
         if(lookup_symbol($1) == -2){
             printf("error:%d: undefined: %s\n", yylineno, $1);
+            codegen("goto L_error_stage:\n");
         }
         else{
             printf("IDENT (name=%s, address=%d)\n", $1, lookup_symbol($1));
