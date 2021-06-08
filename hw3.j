@@ -147,15 +147,17 @@ L_cmp_6:
 	istore 3
 	iload 3
 	ldc 10
+	iadd 
+	istore 3
 	iload 3
 	ldc 0
 	isub 
-	ifgt L_cmp_6
+	ifgt L_cmp_7
 	iconst_0
-	goto L_cmp_7
-L_cmp_6:
-	iconst_1
+	goto L_cmp_8
 L_cmp_7:
+	iconst_1
+L_cmp_8:
 
 	iload 3
 	getstatic java/lang/System/out Ljava/io/PrintStream;

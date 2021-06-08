@@ -180,6 +180,10 @@ DeclarationStmt
         if(!strcmp($1,"float")){
             codegen("ldc 0.000000 \n");
             codegen("fstore %d\n", lookup_symbol($2));
+        }
+        if(!strcmp($1,"string")){
+            codegen("ldc \"\" \n");            
+            codegen("astore %d\n", lookup_symbol($2));
         } 
     }
     | Type IDENT '[' Expression ']' {        
@@ -250,6 +254,12 @@ AssignmentExpr
         else if(!strcmp($1,"float") && !strcmp($3,"float")){
             codegen("fstore %d\n",lookup_symbol(var_name));
         }
+        else if(!strcmp($1,"string") && !strcmp($3,"string")){
+            codegen("astore %d\n",lookup_symbol(var_name));
+        }
+        else if(!strcmp($1,"bool")){
+            codegen("istore %d\n",lookup_symbol(var_name));
+        }
         
     }        
     | ID '[' Expression ']' ASSIGN Expression {                 
@@ -263,18 +273,54 @@ AssignmentExpr
     }
     | Expression ADD_ASSIGN Expression {        
         printf("ADD_ASSIGN\n");
+        if(!strcmp($3,"int")){
+            codegen("iadd \n");
+            codegen("istore %d\n",lookup_symbol(var_name));
+        }
+        else if(!strcmp($3,"float")){
+            codegen("fadd \n");
+            codegen("fstore %d\n",lookup_symbol(var_name));
+        }
     }    
     | Expression SUB_ASSIGN Expression {                        
         printf("SUB_ASSIGN\n");
+        if(!strcmp($3,"int")){
+            codegen("isub \n");
+            codegen("istore %d\n",lookup_symbol(var_name));
+        }
+        else if(!strcmp($3,"float")){
+            codegen("fsub \n");
+            codegen("fstore %d\n",lookup_symbol(var_name));
+        }
     }
     | Expression MUL_ASSIGN Expression {                
         printf("MUL_ASSIGN\n");
+        if(!strcmp($3,"int")){
+            codegen("imul \n");
+            codegen("istore %d\n",lookup_symbol(var_name));
+        }
+        else if(!strcmp($3,"float")){
+            codegen("fmul \n");
+            codegen("fstore %d\n",lookup_symbol(var_name));
+        }
     }
     | Expression QUO_ASSIGN Expression {                      
         printf("QUO_ASSIGN\n");
+        if(!strcmp($3,"int")){
+            codegen("idiv \n");
+            codegen("istore %d\n",lookup_symbol(var_name));
+        }
+        else if(!strcmp($3,"float")){
+            codegen("fdiv \n");
+            codegen("fstore %d\n",lookup_symbol(var_name));
+        }
     }
     | Expression REM_ASSIGN Expression {                        
         printf("REM_ASSIGN\n");
+        if(!strcmp($3,"int")){
+            codegen("irem \n");
+            codegen("istore %d\n",lookup_symbol(var_name));
+        }        
     }
     | Num ASSIGN Expression {                
         printf("error:%d: cannot assign to %s\n", yylineno, $1);
@@ -282,7 +328,7 @@ AssignmentExpr
     }
     | Num ADD_ASSIGN Expression {        
         printf("error:%d: cannot assign to %s\n", yylineno, $1);
-        printf("ADD_ASSIGN\n");
+        printf("ADD_ASSIGN\n");        
     }
     | Num SUB_ASSIGN Expression {                
         printf("error:%d: cannot assign to %s\n", yylineno, $1);        
@@ -954,12 +1000,14 @@ void printmsg(char* type){
         
         codegen("ldc \"true\"\n");        
 
+        compare_level++;
         INDENT--;
-        codegen("L_cmp_%d:\n",compare_level+1);
+        codegen("L_cmp_%d:\n",compare_level);
         INDENT++;
         codegen("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
         codegen("swap\n");
         codegen("invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V\n\n");
+        
     }
     else if(!strcmp(type, "string")){
         if(newline){
