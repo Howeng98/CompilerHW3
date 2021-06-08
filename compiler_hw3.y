@@ -31,6 +31,7 @@
     char changedType[10];
     char specialVar[10];
     bool isNum = false;
+    int checknum;
 
     void yyerror (char const *s)
     {
@@ -133,7 +134,7 @@
 
 /* Nonterminal with return, which need to sepcify type */
 %type <boool> LogicalExpr CompareExpr
-%type <type> Expression ConversionExpr AssignmentExpr
+%type <type> Expression ConversionExpr AssignmentExpr 
 %type <type> BoolExpr ArithmeticExpr TermExpr Bool Num Type Bracket 
 %type <id>   ID
 
@@ -185,6 +186,9 @@ LoopStmt
     }
     | FOR '(' Expression SEMICOLON Expression SEMICOLON Expression ')' Bracket StatementList Bracket {
         // for condition
+        INDENT--;
+        codegen("L_for_exit:\n");               
+        INDENT++;
     }    
 ;
 
@@ -278,6 +282,11 @@ AssignmentExpr
             }
             else
                 codegen("istore %d\n",lookup_symbol(var_name));
+                if(checknum == 10){
+                    INDENT--;
+                    codegen("L_for_start:\n");
+                    INDENT++;
+                }        
         }
         else if(!strcmp($1,"float") && !strcmp($3,"float")){
             if(!strcmp(changedType,"float")){
@@ -509,9 +518,10 @@ LogicalExpr
 ;
 
 CompareExpr
-    : Expression GTR Expression {   
+    : Expression GTR Expression {
         current_state = false;     
         printf("GTR\n");
+
         if(!strcmp($1,"int")){
             codegen("isub \n");
         }
@@ -527,21 +537,38 @@ CompareExpr
             }
         }        
         compare_level++;
-        codegen("ifgt L_cmp_%d\n",compare_level);
+        if(checknum != 10)
+            codegen("ifgt L_cmp_%d\n",compare_level);
+        else
+            codegen("ifgt L_cmp_%d\n",compare_level+2);
         // if not greater than zero (less than or equal)
         codegen("iconst_0\n"); //return FALSE 0
         current_state = false;
-        codegen("goto L_cmp_%d\n",compare_level+1);
+
+        if(checknum != 10)
+            codegen("goto L_cmp_%d\n",compare_level+1);
+        else{            
+            codegen("goto L_for_exit\n");
+        }
         // if greater than zero
         // Print step of L_cmp_compare_level
-        INDENT--;
-        codegen("L_cmp_%d:\n",compare_level);
-        INDENT++;
-        codegen("iconst_1\n");  //return TRUE 1       
-        current_state = true;
+        if(checknum != 10){
+            INDENT--;
+            codegen("L_cmp_%d:\n",compare_level);
+            INDENT++;
+            codegen("iconst_1\n");  //return TRUE 1
+            current_state = true;
+        }        
         INDENT--;
         compare_level++;
-        codegen("L_cmp_%d:\n\n",compare_level); //do nothing
+        if(checknum != 10)        
+            codegen("L_cmp_%d:\n\n",compare_level); //do nothing                            
+        else{
+            INDENT--;
+            codegen("L_for_dec:\n");
+            INDENT++;
+        }
+        
         INDENT++;
         if(current_state){
             $$ = "TRUE";
@@ -666,9 +693,11 @@ TermExpr
         printf("DEC\n");
         if(!strcmp($1, "int")){
             // codegen("iload %d\n", lookup_symbol(var_name));
+            
             codegen("ldc 1\n");
             codegen("isub \n");        
-            codegen("istore %d\n", lookup_symbol(var_name));        
+            codegen("istore %d\n", lookup_symbol(var_name));       
+            codegen("goto L_for_start\n"); 
         }
         if(!strcmp($1, "float")){
             // codegen("fload %d\n", lookup_symbol(var_name));
@@ -713,7 +742,9 @@ Num
         // push a useless stack, can ignore
         push_stack(var_name,"int");
         isNum = true;
-        $$ = "int";
+        if($1 == 10)
+            checknum = 10;
+        $$ = "int";        
     }
     | FLOAT_LIT {         
         printf("FLOAT_LIT %f\n", $1);
@@ -764,11 +795,18 @@ Bracket
         $$ = $2;
     }
     | '{' {        
-        current_scope_level++;        
+        current_scope_level++;
+        INDENT--;
+        codegen("L_cmp_%d:\n",compare_level+1);
+        INDENT++;
     }
     | '}' {
         dump_symbol();
         current_scope_level--;
+        codegen("goto L_for_dec\n");
+        // codegen("goto L_for_compare\n");
+        
+        
     }
     | WHILE Bracket {
         if(strcmp($2,"bool")!=0 && strcmp($2,"TRUE")!=0 && strcmp($2,"FALSE")){
