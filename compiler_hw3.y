@@ -566,7 +566,35 @@ CompareExpr
     }
     | Expression EQL Expression { 
         $$ = $1;
-        printf("EQL\n"); 
+        printf("EQL\n");
+        if(!strcmp($1,"int")){
+            codegen("isub \n");
+        }
+        else if(!strcmp($1,"float")){
+            codegen("fcmpl \n");
+        }
+        else{
+            if(!strcmp(getType(var_name), "int")){
+                codegen("isub \n");
+            }
+            else if(!strcmp(getType(var_name), "float")){
+                codegen("fcmpl \n");
+            }
+        }
+        compare_level++;        
+        codegen("ifeq L_cmp_%d\n",compare_level);
+        codegen("iconst_0\n");
+        codegen("goto L_cmp_%d\n",compare_level+1);
+        
+        INDENT--;
+        codegen("L_cmp_%d:\n",compare_level);
+        INDENT++;
+        codegen("iconst_1\n");
+
+        compare_level++;
+        INDENT--;
+        codegen("L_cmp_%d:\n",compare_level);
+        INDENT++;
     }
     | Expression NEQ Expression { 
         $$ = $1;
