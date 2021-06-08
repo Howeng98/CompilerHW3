@@ -243,5 +243,6 @@ L_cmp_9:
 	swap
 	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
 	goto L_for_dec
+L_for_exit:
 	return
 .end method

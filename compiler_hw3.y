@@ -32,6 +32,7 @@
     char specialVar[10];
     bool isNum = false;
     int checknum;
+    bool toggle;
 
     void yyerror (char const *s)
     {
@@ -143,7 +144,11 @@
 /* Grammar section */
 %%
 Program
-    : StatementList 
+    : StatementList {
+        INDENT--;
+        codegen("L_for_exit:\n");
+        INDENT++;
+    }
 ;
 StatementList
     : StatementList Statement SEMICOLON    
@@ -697,7 +702,8 @@ TermExpr
             codegen("ldc 1\n");
             codegen("isub \n");        
             codegen("istore %d\n", lookup_symbol(var_name));       
-            codegen("goto L_for_start\n"); 
+            if(checknum == 10)
+                codegen("goto L_for_start\n"); 
         }
         if(!strcmp($1, "float")){
             // codegen("fload %d\n", lookup_symbol(var_name));
@@ -792,7 +798,7 @@ ID
 
 Bracket
     : '(' Expression ')'{        
-        $$ = $2;
+        $$ = $2;        
     }
     | '{' {        
         current_scope_level++;
