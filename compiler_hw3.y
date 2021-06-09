@@ -151,10 +151,10 @@ Program
     }
 ;
 StatementList
-    : StatementList Statement SEMICOLON    
-    | StatementList Statement
-    | Statement SEMICOLON
-    | Statement
+    : StatementList Statement SEMICOLON            
+    | StatementList Statement 
+    | Statement SEMICOLON 
+    | Statement    
 ;
 
 Statement
@@ -179,6 +179,14 @@ IfStmt
     : Bracket Bracket StatementList '}' {
         dump_symbol();
         current_scope_level--;                
+        if(checknum == 9){            
+            compare_level--;                                    
+            codegen("goto L_while_cmp_%d\n\n",compare_level);
+            INDENT--;    
+            codegen("L_while_end_%d:\n",compare_level);
+            INDENT++;
+        }
+        
     }
     | ELSE {
         if(checknum == 400){
@@ -204,7 +212,7 @@ LoopStmt
         dump_symbol();
         current_scope_level--;
         INDENT--;
-        codegen("L_if_else:\n");        
+        codegen("L_if_else:\n");
         INDENT++;
         codegen("iconst_1\n");                
     }
@@ -640,7 +648,14 @@ CompareExpr
             // INDENT++;
             // codegen("iconst_1\n");
         }
+        if(checknum == 9){
+            // compare_level++;
+            codegen("ifle L_while_start_%d\n",compare_level);
+            codegen("iconst_0\n");
+            codegen("goto L_while_end_%d\n",compare_level);
+        }
         
+
     }
     | Expression EQL Expression { 
         $$ = $1;
@@ -674,7 +689,7 @@ CompareExpr
             codegen("ifeq L_cmp_%d\n",compare_level+1);
             codegen("iconst_0\n");
             codegen("goto L_else_2\n");           
-        }
+        }        
         else{
             compare_level++;        
             codegen("ifeq L_cmp_%d\n",compare_level);
@@ -821,6 +836,10 @@ Num
             checknum = 400;
         if($1 == 700)
             checknum = 700;
+        if($1 == 9)
+            checknum = 9;
+        if($1 == 1)
+            checknum = 1;
         $$ = "int";        
     }
     | FLOAT_LIT {         
@@ -874,10 +893,13 @@ Bracket
     }
     | '{' {        
         current_scope_level++;
-        INDENT--;
         compare_level++;
-        codegen("L_cmp_%d:\n",compare_level);
-        INDENT++;
+        if(checknum != 9){
+            INDENT--;            
+            codegen("L_cmp_%d:\n",compare_level);
+            INDENT++;
+        }
+        
     }
     | '}' {
         dump_symbol();
@@ -886,14 +908,19 @@ Bracket
             codegen("goto L_for_dec\n");
         if(checknum==400||checknum==600||checknum==700)
             codegen("goto L_loop_exit\n");
+        if(checknum == 9)
+            codegen("goto L_loop_exit\n");
         
         
     }
-    | WHILE Bracket {
+    | WHILE_STAGE Bracket {
         if(strcmp($2,"bool")!=0 && strcmp($2,"TRUE")!=0 && strcmp($2,"FALSE")){
             printf("error:%d: non-bool (type %s) used as for condition\n", yylineno+1, $2);
         }
-    }
+        INDENT--;
+        codegen("L_while_start_%d:\n", compare_level);
+        INDENT++;
+    }    
     | IF Bracket {
         if(strcmp($2,"bool")!=0 && strcmp($2,"TRUE")!=0 && strcmp($2,"FALSE")){
             printf("error:%d: non-bool (type %s) used as for condition\n", yylineno+1, $2);
@@ -901,6 +928,12 @@ Bracket
     }
 ;
 
+WHILE_STAGE
+    : WHILE {
+        INDENT--;
+        codegen("L_while_cmp_%d:\n",compare_level);
+        INDENT++;
+    }
 %%
 
 

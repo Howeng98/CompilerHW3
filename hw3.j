@@ -22,7 +22,7 @@ L_cmp_1:
 	swap
 	invokevirtual java/io/PrintStream/print(I)V
 	goto L_for_dec
-L_for_exit:
+L_loop_exit:
 	ldc "\n" 
 	getstatic java/lang/System/out Ljava/io/PrintStream;
 	swap
@@ -30,20 +30,23 @@ L_for_exit:
 	iload 0
 	ldc 1
 	istore 0
-L_for_start:
+L_while_cmp_1:
 	iload 0
 	ldc 0
 	isub 
-	ifgt L_cmp_3
+	ifgt L_cmp_2
 	iconst_0
-	goto L_for_exit
-L_for_dec:
+	goto L_cmp_3
+L_cmp_2:
+	iconst_1
 L_cmp_3:
+
+L_while_start_3:
+L_cmp_4:
 	iload 0
 	ldc 1
 	isub 
 	istore 0
-	goto L_for_start
 	ldc 3
 	newarray int
 	astore 1
@@ -96,9 +99,9 @@ L_cmp_3:
 	ldc 3
 	irem 
 	isub 
-	ifgt L_cmp_5
+	ifgt L_cmp_7
 	iconst_0
-	goto L_for_exit
+	goto L_loop_exit
 L_for_dec:
 	iconst_1 
 	iconst_1 
@@ -110,12 +113,12 @@ L_for_dec:
 	ixor 
 	iand
 	ior
-	ifne L_cmp_5
+	ifne L_cmp_7
 	ldc "false"
-	goto L_cmp_6
-L_cmp_5:
+	goto L_cmp_8
+L_cmp_7:
 	ldc "true"
-L_cmp_6:
+L_cmp_8:
 	getstatic java/lang/System/out Ljava/io/PrintStream;
 	swap
 	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
@@ -150,14 +153,16 @@ L_cmp_6:
 	ldc 10
 	iadd 
 	istore 3
+L_while_cmp_8:
 	iload 3
 	ldc 0
 	isub 
-	ifgt L_cmp_9
+	ifgt L_cmp_11
 	iconst_0
-	goto L_for_exit
+	goto L_loop_exit
 L_for_dec:
-L_cmp_9:
+L_while_start_10:
+L_cmp_11:
 	iload 3
 	getstatic java/lang/System/out Ljava/io/PrintStream;
 	swap
@@ -173,7 +178,7 @@ L_cmp_9:
 	goto L_for_start
 	iload 3
 	ldc 0
-L_cmp_9:
+L_cmp_12:
 	ldc 3.140000
 	fstore 4
 	fload 4
@@ -183,7 +188,7 @@ L_cmp_9:
 	getstatic java/lang/System/out Ljava/io/PrintStream;
 	swap
 	invokevirtual java/io/PrintStream/print(I)V
-L_cmp_9:
+L_cmp_13:
 	ldc 6.600000
 	fstore 5
 	ldc "If x == " 
@@ -200,9 +205,12 @@ L_cmp_9:
 	invokevirtual java/io/PrintStream/print(F)V
 	ldc 1
 	istore 6
+L_while_cmp_13:
 	iload 6
 	ldc 3
-L_cmp_9:
+	isub 
+L_while_start_13:
+L_cmp_14:
 	ldc "\t" 
 	getstatic java/lang/System/out Ljava/io/PrintStream;
 	swap
@@ -242,7 +250,6 @@ L_cmp_9:
 	getstatic java/lang/System/out Ljava/io/PrintStream;
 	swap
 	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
-	goto L_for_dec
-L_for_exit:
+L_loop_exit:
 	return
 .end method
