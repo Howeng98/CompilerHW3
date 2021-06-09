@@ -146,7 +146,7 @@
 Program
     : StatementList {
         INDENT--;
-        codegen("L_for_exit:\n");
+        codegen("L_loop_exit:\n");
         INDENT++;
     }
 ;
@@ -178,9 +178,24 @@ PrintStmt
 IfStmt    
     : Bracket Bracket StatementList '}' {
         dump_symbol();
-        current_scope_level--;
+        current_scope_level--;                
     }
-    | ELSE
+    | ELSE {
+        if(checknum == 400){
+            INDENT--;
+            codegen("L_else:\n");        
+            INDENT++;
+            codegen("iconst_1\n");                
+        }
+        if(checknum == 700){
+            INDENT--;
+            codegen("L_else_2:\n");        
+            INDENT++;
+            codegen("iconst_1\n");                
+            codegen("goto L_loop_exit\n");
+        }
+        
+    }
 ;
 
 LoopStmt
@@ -188,11 +203,15 @@ LoopStmt
         // if and while condition
         dump_symbol();
         current_scope_level--;
+        INDENT--;
+        codegen("L_if_else:\n");        
+        INDENT++;
+        codegen("iconst_1\n");                
     }
     | FOR '(' Expression SEMICOLON Expression SEMICOLON Expression ')' Bracket StatementList Bracket {
         // for condition
         INDENT--;
-        codegen("L_for_exit:\n");               
+        codegen("L_loop_exit:\n");               
         INDENT++;
     }    
 ;
@@ -553,7 +572,7 @@ CompareExpr
         if(checknum != 10)
             codegen("goto L_cmp_%d\n",compare_level+1);
         else{            
-            codegen("goto L_for_exit\n");
+            codegen("goto L_loop_exit\n");
         }
         // if greater than zero
         // Print step of L_cmp_compare_level
@@ -594,7 +613,34 @@ CompareExpr
     }
     | Expression LEQ Expression { 
         $$ = $1;
-        printf("LEQ\n"); 
+        printf("LEQ\n");
+
+        if(!strcmp($1,"int")){
+            codegen("isub \n");
+        }
+        else if(!strcmp($1,"float")){
+            codegen("fcmpl \n");
+        }
+        else{
+            if(!strcmp(getType(var_name), "int")){
+                codegen("isub \n");
+            }
+            else if(!strcmp(getType(var_name), "float")){
+                codegen("fcmpl \n");
+            }
+        }
+
+        if(checknum == 400){
+            compare_level++;
+            codegen("ifle L_cmp_%d\n",compare_level+1);
+            codegen("iconst_0\n");
+            codegen("goto L_else\n");
+            // INDENT--;
+            // codegen("L_cmp_%d\n", compare_level);
+            // INDENT++;
+            // codegen("iconst_1\n");
+        }
+        
     }
     | Expression EQL Expression { 
         $$ = $1;
@@ -613,20 +659,41 @@ CompareExpr
                 codegen("fcmpl \n");
             }
         }
-        compare_level++;        
-        codegen("ifeq L_cmp_%d\n",compare_level);
-        codegen("iconst_0\n");
-        codegen("goto L_cmp_%d\n",compare_level+1);
-        
-        INDENT--;
-        codegen("L_cmp_%d:\n",compare_level);
-        INDENT++;
-        codegen("iconst_1\n");
+        if(checknum == 400){
+            compare_level++;
+            codegen("ifeq L_cmp_%d\n",compare_level);
+            codegen("iconst_0\n");
+            codegen("goto L_loop_exit\n");
 
-        compare_level++;
-        INDENT--;
-        codegen("L_cmp_%d:\n",compare_level);
-        INDENT++;
+            INDENT--;
+            codegen("L_cmp_%d:\n",compare_level);
+            INDENT++;
+        }
+        else if(checknum == 700){
+            compare_level++;
+            codegen("ifeq L_cmp_%d\n",compare_level+1);
+            codegen("iconst_0\n");
+            codegen("goto L_else_2\n");           
+        }
+        else{
+            compare_level++;        
+            codegen("ifeq L_cmp_%d\n",compare_level);
+            codegen("iconst_0\n");
+            codegen("goto L_cmp_%d\n",compare_level+1);
+            
+            INDENT--;
+            codegen("L_cmp_%d:\n",compare_level);
+            INDENT++;
+            codegen("iconst_1\n");
+
+            compare_level++;
+            INDENT--;
+            codegen("L_cmp_%d:\n",compare_level);
+            INDENT++;
+        }
+        
+        
+        
     }
     | Expression NEQ Expression { 
         $$ = $1;
@@ -750,6 +817,10 @@ Num
         isNum = true;
         if($1 == 10)
             checknum = 10;
+        if($1 == 400)
+            checknum = 400;
+        if($1 == 700)
+            checknum = 700;
         $$ = "int";        
     }
     | FLOAT_LIT {         
@@ -804,14 +875,17 @@ Bracket
     | '{' {        
         current_scope_level++;
         INDENT--;
-        codegen("L_cmp_%d:\n",compare_level+1);
+        compare_level++;
+        codegen("L_cmp_%d:\n",compare_level);
         INDENT++;
     }
     | '}' {
         dump_symbol();
         current_scope_level--;
-        codegen("goto L_for_dec\n");
-        // codegen("goto L_for_compare\n");
+        if(checknum == 10)
+            codegen("goto L_for_dec\n");
+        if(checknum==400||checknum==600||checknum==700)
+            codegen("goto L_loop_exit\n");
         
         
     }
