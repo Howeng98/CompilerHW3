@@ -47,7 +47,6 @@ L_while_cmp_0:
 L_cmp_1:
 	iconst_1
 	goto L_cmp_2
-L_cmp_2:
 	iload 0
 	ldc 1
 	isub 
@@ -83,5 +82,6 @@ L_cmp_2:
 	getstatic java/lang/System/out Ljava/io/PrintStream;
 	swap
 	invokevirtual java/io/PrintStream/print(I)V
+L_loop_exit:
 	return
 .end method

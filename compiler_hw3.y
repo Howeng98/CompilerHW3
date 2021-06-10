@@ -146,13 +146,17 @@
 /* Grammar section */
 %%
 Program
-    : StatementList
+    : StatementList {
+        INDENT--;
+        codegen("L_loop_exit:\n");
+        INDENT++;
+    }
 ;
 StatementList
-    : StatementList Statement SEMICOLON            
+    : StatementList Statement SEMICOLON 
     | StatementList Statement 
     | Statement SEMICOLON 
-    | Statement    
+    | Statement 
 ;
 
 Statement
@@ -176,7 +180,7 @@ PrintStmt
 
 IfStmt    
     : Bracket Bracket StatementList '}' {
-        dump_symbol();
+        dump_symbol();        
         current_scope_level--;                
         if_state = true;
     }
@@ -193,22 +197,21 @@ IfStmt
             INDENT++;
             codegen("iconst_1\n");                
             codegen("goto L_loop_exit\n");
-        }
-        
+        }        
     }
 ;
 
 LoopStmt
     : Bracket Bracket StatementList '}' {        
         // if and while condition
-        dump_symbol();
+        dump_symbol();        
         current_scope_level--;
-        INDENT--;
-        codegen("L_if_else:\n");
-        INDENT++;
-        codegen("iconst_1\n");                
+        // INDENT--;
+        // codegen("L_if_eleeeeeeeeeeeeeeeeeeeese:\n");
+        // INDENT++;
+        // codegen("iconst_111111111111111\n");                
     }
-    | FOR FOR_OPEN Expression FIRST_SEMICOLON Expression SECOND_SEMICOLON Expression FOR_CLOSE Bracket StatementList Bracket {
+    | FOR FOR_OPEN Expression FIRST_SEMICOLON Expression SECOND_SEMICOLON Expression FOR_CLOSE FOR_Bracket_OPEN StatementList FOR_Bracket_CLOSE {
         // for condition
         codegen("goto FOR_cmp2_%d\n", compare_level);
         INDENT--;        
@@ -244,6 +247,18 @@ FOR_CLOSE
     : ')' {
         codegen("goto FOR_cmp_%d\n", compare_level-2);
     }
+;
+
+FOR_Bracket_OPEN
+    : Bracket {
+        INDENT--;
+        codegen("L_cmp_%d:\n", compare_level);
+        INDENT++;
+    }
+;
+
+FOR_Bracket_CLOSE
+    : Bracket
 ;
 
 DeclarationStmt
@@ -639,15 +654,7 @@ CompareExpr
             codegen("L_cmp_%d:\n",compare_level+1);
             INDENT++;
         }
-                
-        // if(if_state == false){
-        //     INDENT--;
-        //     codegen("L_cmp_%d:\n",compare_level+1);
-        //     INDENT++;
-        // }
-
-        
-
+                        
         if_state = false;        
         current_state = true;
         compare_level++;
@@ -738,22 +745,33 @@ CompareExpr
                 codegen("fcmpl \n");
             }
         }
-        if(checknum == 400){
-            compare_level++;
-            codegen("ifeq L_cmp_%d\n",compare_level);
+        // if(checknum == 400){
+        //     compare_level++;
+        //     codegen("ifeq L_cmp_%d\n",compare_level);
+        //     codegen("iconst_0\n");
+        //     codegen("goto L_loop_exit\n");
+
+        //     INDENT--;
+        //     codegen("L_cmp_%d:\n",compare_level);
+        //     INDENT++;
+        // }
+        // else if(checknum == 700){
+        //     compare_level++;
+        //     codegen("ifeq L_cmp_%d\n",compare_level+1);
+        //     codegen("iconst_0\n");
+        //     codegen("goto L_else_2\n");           
+        // }        
+        // else{
+        if(if_state == true){
+            codegen("ifeq L_cmp_%d\n", compare_level);
             codegen("iconst_0\n");
             codegen("goto L_loop_exit\n");
-
             INDENT--;
-            codegen("L_cmp_%d:\n",compare_level);
+            codegen("L_cmp_%d:\n", compare_level);
             INDENT++;
+            codegen("iconst_1\n");
+            if_state = false;
         }
-        else if(checknum == 700){
-            compare_level++;
-            codegen("ifeq L_cmp_%d\n",compare_level+1);
-            codegen("iconst_0\n");
-            codegen("goto L_else_2\n");           
-        }        
         else{
             compare_level++;        
             codegen("ifeq L_cmp_%d\n",compare_level);
@@ -770,9 +788,7 @@ CompareExpr
             codegen("L_cmp_%d:\n",compare_level);
             INDENT++;
         }
-        
-        
-        
+
     }
     | Expression NEQ Expression { 
         $$ = $1;
@@ -957,20 +973,14 @@ Bracket
     }
     | '{' {        
         current_scope_level++;        
-        INDENT--;            
-        codegen("L_cmp_%d:\n",compare_level);
-        INDENT++;        
+        // INDENT--;            
+        // codegen("L_cmp_%d:\n",compare_level);
+        // INDENT++;        
         
     }
     | '}' {
         dump_symbol();
-        current_scope_level--;
-        // if(checknum == 10)
-        //     codegen("goto L_loop_exit\n");
-        if(checknum==400||checknum==600||checknum==700)
-            codegen("goto L_loop_exit\n");
-        if(checknum == 9)
-            codegen("goto L_loop_exit\n");                
+        current_scope_level--;                       
     }
     | WHILE_STAGE Bracket {
         if(strcmp($2,"bool")!=0 && strcmp($2,"TRUE")!=0 && strcmp($2,"FALSE")){
@@ -980,10 +990,11 @@ Bracket
         // codegen("L_while_start_%d:\n", compare_level);
         // INDENT++;
     }    
-    | IF Bracket {
+    | IF_STAGE Bracket {
         if(strcmp($2,"bool")!=0 && strcmp($2,"TRUE")!=0 && strcmp($2,"FALSE")){
             printf("error:%d: non-bool (type %s) used as for condition\n", yylineno+1, $2);
         }
+        
     }
 ;
 
@@ -992,6 +1003,15 @@ WHILE_STAGE
         INDENT--;
         codegen("L_while_cmp_%d:\n",compare_level);
         INDENT++;
+    }
+;
+
+IF_STAGE
+    : IF {
+        INDENT--;
+        codegen("L_if_cmp_%d:\n",compare_level);
+        INDENT++;
+        if_state = true;
     }
 %%
 
