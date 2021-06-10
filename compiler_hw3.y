@@ -35,6 +35,7 @@
     bool toggle;
     bool if_state = false;
     bool for_state = false;
+    bool else_state = false;
 
     void yyerror (char const *s)
     {
@@ -153,7 +154,7 @@ Program
     }
 ;
 StatementList
-    : StatementList Statement SEMICOLON 
+    : StatementList Statement SEMICOLON        
     | StatementList Statement 
     | Statement SEMICOLON 
     | Statement 
@@ -179,37 +180,41 @@ PrintStmt
 ;
 
 IfStmt    
-    : Bracket Bracket StatementList '}' {
+    : ELSE_Bracket Bracket StatementList IF_CLOSE1 ELSE {
+        // if condition with else        
         dump_symbol();        
         current_scope_level--;                
         if_state = true;
+        INDENT--;
+        codegen("L_else_cmp_%d:\n", compare_level-1);
+        INDENT++;
+        // else_state = false;
+        
     }
-    | ELSE {
-        if(checknum == 400){
-            INDENT--;
-            codegen("L_else:\n");        
-            INDENT++;
-            codegen("iconst_1\n");                
-        }
-        if(checknum == 700){
-            INDENT--;
-            codegen("L_else_2:\n");        
-            INDENT++;
-            codegen("iconst_1\n");                
-            codegen("goto L_loop_exit\n");
-        }        
+;
+
+
+IF_CLOSE1
+    : '}' {
+        //FIXME: a little bit weird, 
+        // if meet IF,then this codegen won't work, but
+        // if meet IF-ELSE, then this codegen work.        
+        codegen("goto L_loop_exit\n");
+    }
+;
+
+ELSE_Bracket
+    : Bracket {
+        else_state = true;
     }
 ;
 
 LoopStmt
-    : Bracket Bracket StatementList '}' {        
-        // if and while condition
+    : ELSE_Bracket2 Bracket StatementList IF_CLOSE2 {        
+        // if condition without else        
         dump_symbol();        
         current_scope_level--;
-        // INDENT--;
-        // codegen("L_if_eleeeeeeeeeeeeeeeeeeeese:\n");
-        // INDENT++;
-        // codegen("iconst_111111111111111\n");                
+        // codegen("goto L_loop_exit\n");
     }
     | FOR FOR_OPEN Expression FIRST_SEMICOLON Expression SECOND_SEMICOLON Expression FOR_CLOSE FOR_Bracket_OPEN StatementList FOR_Bracket_CLOSE {
         // for condition
@@ -219,6 +224,23 @@ LoopStmt
         INDENT++;
     }
 ;
+
+ELSE_Bracket2
+    : Bracket {
+        else_state = false;
+    }
+;
+
+IF_CLOSE2
+    : '}' {
+        //FIXME: a little bit weird, 
+        // if meet IF,then this codegen won't work, but
+        // if meet IF-ELSE, then this codegen work.        
+        if(else_state == true)
+            codegen("goto L_loop_exit\n");        
+    }
+;
+
 
 FIRST_SEMICOLON
     : SEMICOLON {
@@ -713,17 +735,15 @@ CompareExpr
             }
         }
 
-        if(checknum == 400){
-            compare_level++;
+
+        if(if_state == true){
             codegen("ifle L_cmp_%d\n",compare_level+1);
             codegen("iconst_0\n");
-            codegen("goto L_else\n");            
-        }
-        if(checknum == 9){
-            // compare_level++;
-            codegen("ifle L_while_start_%d\n",compare_level);
-            codegen("iconst_0\n");
-            codegen("goto L_while_end_%d\n",compare_level);
+            if(else_state == true){
+                //got else
+                codegen("goto L_else_cmp_%d\n",compare_level);
+            }
+            if_state = false;
         }
         
 
@@ -745,27 +765,18 @@ CompareExpr
                 codegen("fcmpl \n");
             }
         }
-        // if(checknum == 400){
-        //     compare_level++;
-        //     codegen("ifeq L_cmp_%d\n",compare_level);
-        //     codegen("iconst_0\n");
-        //     codegen("goto L_loop_exit\n");
 
-        //     INDENT--;
-        //     codegen("L_cmp_%d:\n",compare_level);
-        //     INDENT++;
-        // }
-        // else if(checknum == 700){
-        //     compare_level++;
-        //     codegen("ifeq L_cmp_%d\n",compare_level+1);
-        //     codegen("iconst_0\n");
-        //     codegen("goto L_else_2\n");           
-        // }        
-        // else{
         if(if_state == true){
             codegen("ifeq L_cmp_%d\n", compare_level);
             codegen("iconst_0\n");
-            codegen("goto L_loop_exit\n");
+            if(else_state == false){
+                //if checker show that it is not if-else clause, then goto L_loop_exit when condition result is false
+                codegen("goto L_loop_exit\n");
+            }
+            else{
+                codegen("goto L_else_cmp_%d\n", compare_level);
+            }
+            
             INDENT--;
             codegen("L_cmp_%d:\n", compare_level);
             INDENT++;
@@ -973,10 +984,6 @@ Bracket
     }
     | '{' {        
         current_scope_level++;        
-        // INDENT--;            
-        // codegen("L_cmp_%d:\n",compare_level);
-        // INDENT++;        
-        
     }
     | '}' {
         dump_symbol();
@@ -986,15 +993,18 @@ Bracket
         if(strcmp($2,"bool")!=0 && strcmp($2,"TRUE")!=0 && strcmp($2,"FALSE")){
             printf("error:%d: non-bool (type %s) used as for condition\n", yylineno+1, $2);
         }
-        // INDENT--;
-        // codegen("L_while_start_%d:\n", compare_level);
-        // INDENT++;
+        //TODO:maybe need add L_cmp_%d here
     }    
     | IF_STAGE Bracket {
         if(strcmp($2,"bool")!=0 && strcmp($2,"TRUE")!=0 && strcmp($2,"FALSE")){
             printf("error:%d: non-bool (type %s) used as for condition\n", yylineno+1, $2);
         }
+        compare_level++;        
+        // codegen("goto L_elseeeeeeee_stagexD\n");        
         
+        INDENT--;
+        codegen("L_cmp_%d:\n", compare_level);   
+        INDENT++;
     }
 ;
 
@@ -1007,7 +1017,7 @@ WHILE_STAGE
 ;
 
 IF_STAGE
-    : IF {
+    : IF {        
         INDENT--;
         codegen("L_if_cmp_%d:\n",compare_level);
         INDENT++;
@@ -1042,6 +1052,9 @@ int main(int argc, char *argv[])
     dump_symbol();
 	printf("Total lines: %d\n", yylineno);
     /* Codegen end */
+    INDENT--;
+    codegen("L_loop_exit:\n");
+    INDENT++;
     codegen("return\n");
     INDENT--;
     codegen(".end method\n");
