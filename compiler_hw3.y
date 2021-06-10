@@ -36,6 +36,7 @@
     bool if_state = false;
     bool for_state = false;
     bool else_state = false;
+    bool while_state = false;
 
     void yyerror (char const *s)
     {
@@ -213,8 +214,7 @@ LoopStmt
     : ELSE_Bracket2 Bracket StatementList IF_CLOSE2 {        
         // if condition without else        
         dump_symbol();        
-        current_scope_level--;
-        // codegen("goto L_loop_exit\n");
+        current_scope_level--;        
     }
     | FOR FOR_OPEN Expression FIRST_SEMICOLON Expression SECOND_SEMICOLON Expression FOR_CLOSE FOR_Bracket_OPEN StatementList FOR_Bracket_CLOSE {
         // for condition
@@ -237,7 +237,7 @@ IF_CLOSE2
         // if meet IF,then this codegen won't work, but
         // if meet IF-ELSE, then this codegen work.        
         if(else_state == true)
-            codegen("goto L_loop_exit\n");        
+            codegen("goto L_loop_exit\n");                
     }
 ;
 
@@ -663,6 +663,16 @@ CompareExpr
             codegen("goto L_cmp_%d\n",compare_level+1);
             for_state = false;
         }
+        else if(while_state == true){
+            codegen("ifgt L_cmp_%d\n", compare_level);
+            codegen("iconst_0\n");
+            codegen("goto L_while_end_%d\n", compare_level);
+            // while_state = false;
+            INDENT--;
+            codegen("L_cmp_%d:\n", compare_level);
+            INDENT++;
+            compare_level++;
+        }
         else{
             codegen("ifgt L_cmp_%d\n",compare_level);                
             codegen("iconst_0\n");
@@ -746,7 +756,16 @@ CompareExpr
             if_state = false;
         }
         
-
+        if(while_state == true){
+            codegen("ifle L_cmp_%d\n", compare_level);
+            codegen("iconst_0\n");
+            codegen("goto L_while_end_%d\n", compare_level);
+            // while_state = false;
+            INDENT--;
+            codegen("L_cmp_%d:\n", compare_level);
+            INDENT++;
+            compare_level++;
+        }        
     }
     | Expression EQL Expression { 
         $$ = $1;
@@ -986,25 +1005,35 @@ Bracket
         current_scope_level++;        
     }
     | '}' {
+        if(while_state == true){
+            codegen("goto L_while_cmp_%d\n",compare_level-1);
+            INDENT--;
+            codegen("L_while_end_%d:\n",compare_level-1);
+            INDENT++;
+            compare_level--;
+        }
+
         dump_symbol();
-        current_scope_level--;                       
+        current_scope_level--;                      
     }
     | WHILE_STAGE Bracket {
         if(strcmp($2,"bool")!=0 && strcmp($2,"TRUE")!=0 && strcmp($2,"FALSE")){
             printf("error:%d: non-bool (type %s) used as for condition\n", yylineno+1, $2);
         }
-        //TODO:maybe need add L_cmp_%d here
+                
+        // INDENT--;
+        // codegen("L_cmp_%d:\n", compare_level);   
+        // INDENT++;
     }    
     | IF_STAGE Bracket {
         if(strcmp($2,"bool")!=0 && strcmp($2,"TRUE")!=0 && strcmp($2,"FALSE")){
             printf("error:%d: non-bool (type %s) used as for condition\n", yylineno+1, $2);
         }
-        compare_level++;        
-        // codegen("goto L_elseeeeeeee_stagexD\n");        
         
         INDENT--;
         codegen("L_cmp_%d:\n", compare_level);   
         INDENT++;
+        compare_level++;
     }
 ;
 
@@ -1013,6 +1042,7 @@ WHILE_STAGE
         INDENT--;
         codegen("L_while_cmp_%d:\n",compare_level);
         INDENT++;
+        while_state = true;        
     }
 ;
 
