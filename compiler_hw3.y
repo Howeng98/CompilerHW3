@@ -169,7 +169,7 @@ Statement
 
 PrintStmt
     : PRINT Bracket {
-        printf("Print!!!!!:%s\n", $2);
+        // printf("Print!!!!!:%s\n", $2);
         if(!strcmp($2,"TRUE") || !strcmp($2,"FALSE")){
             printf("PRINT bool\n");
         }
@@ -230,10 +230,10 @@ LoopStmt
             printf("error:%d: non-bool (type %s) used as for condition\n", yylineno+1, $2);
         }
         
-        INDENT--;
-        codegen("L_cmp_%d:\n", compare_level);   
-        INDENT++;
-        compare_level++;
+        // INDENT--;
+        // codegen("L_cmp_%d:\n", compare_level);   
+        // INDENT++;
+        // compare_level++;
     }
 ;
 
@@ -322,7 +322,7 @@ FOR_OPEN
 
 FOR_CLOSE
     : ')' {
-        codegen("goto FOR_cmp_%d\n", compare_level-2);
+        codegen("goto FOR_cmp_%d\n", compare_level);
     }
 ;
 
@@ -665,8 +665,8 @@ LogicalExpr
         else if((strcmp($3, "TRUE") != 0) && (strcmp($3,"FALSE") != 0)){
             printf("error:%d: invalid operation: (operator OR not defined on %s)\n", yylineno, $3);
         }
-        // printf("LOR!!!! %s\n",$1);
-        // printf("LOR!!!! %s\n",$3);
+        printf("LOR!!!! %s\n",$1);
+        printf("LOR!!!! %s\n",$3);
         $$ = $1;
         printf("OR\n");
         codegen("ior\n");
@@ -679,8 +679,8 @@ LogicalExpr
             printf("error:%d: invalid operation: (operator AND not defined on %s)\n", yylineno, $3);
         }
         $$ = $1;
-        // printf("LAND!!!! %s\n",$1);
-        // printf("LAND!!!! %s\n",$3);
+        printf("LAND!!!! %s\n",$1);
+        printf("LAND!!!! %s\n",$3);
         printf("AND\n");
         codegen("iand\n");
     }
@@ -729,22 +729,25 @@ CompareExpr
             INDENT++;
             
         }
-        else{
+        else{            
+            compare_level++;
             codegen("ifgt L_cmp_%d\n",compare_level);                
-            codegen("iconst_0\n");
-            current_state = false;        
-            codegen("goto L_cmp_%d\n",compare_level);
+            codegen("iconst_0\n");            
+            codegen("goto L_cmp_%d\n",compare_level+1);
+
             INDENT--;
             codegen("L_cmp_%d:\n",compare_level);
             INDENT++;
+
             codegen("iconst_1\n");
             INDENT--;
-            codegen("L_cmp_%d:\n",compare_level);
+            codegen("L_cmp_%d:\n",compare_level+1);
             INDENT++;
+            compare_level++;
+            current_state = true;
         }
-                        
-        if_state = false;        
-        current_state = true;
+                                
+        // current_state = true;
 
         if(current_state){
             $$ = "TRUE";
@@ -1330,11 +1333,13 @@ bool isArray(char* var_name){
 
 void printmsg(char* type){        
     if(!strcmp(type, "int")){        
+        printf("PRINT int\n");
         codegen("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
         codegen("swap\n");
         codegen("invokevirtual java/io/PrintStream/print(I)V\n");
     }
     else if(!strcmp(type, "float")){
+        printf("PRINT float\n");
         codegen("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
         codegen("swap\n");
         codegen("invokevirtual java/io/PrintStream/print(F)V\n");
@@ -1349,19 +1354,23 @@ void printmsg(char* type){
         codegen("L_cmp_%d:\n",compare_level);
         INDENT++;        
         codegen("ldc \"true\"\n");        
-
-        compare_level++;
+        
         INDENT--;
-        codegen("L_cmp_%d:\n",compare_level);
+        codegen("L_cmp_%d:\n",compare_level+1);
         INDENT++;
         codegen("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
         codegen("swap\n");
         codegen("invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V\n\n");
-        compare_level--;
-        compare_level--;
+        
+        compare_level++;
+        if(while_state || for_state || if_state){
+            compare_level = compare_level - 2;    
+        }
+        
         
     }
     else if(!strcmp(type, "string")){
+        printf("PRINT string\n");
         if(newline){                                                  
             codegen("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
             codegen("swap\n");

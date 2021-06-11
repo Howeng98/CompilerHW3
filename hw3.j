@@ -22,7 +22,7 @@ FOR_cmp2_0:
 	ldc 1
 	iadd 
 	istore 0
-	goto FOR_cmp_-2
+	goto FOR_cmp_0
 L_cmp_0:
 	iload 0
 	getstatic java/lang/System/out Ljava/io/PrintStream;
@@ -82,9 +82,115 @@ L_cmp_1:
 	getstatic java/lang/System/out Ljava/io/PrintStream;
 	swap
 	invokevirtual java/io/PrintStream/print(I)V
+	ldc "\n" 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
+	ldc 3
+	ldc 4
+	ldc 5
+	ldc 8
+	ineg 
+	iadd 
+	imul 
+	isub 
+	ldc 10
+	ldc 7
+	idiv 
+	isub 
+	ldc 4
+	ineg 
+	ldc 3
+	irem 
+	isub 
+	ifgt L_cmp_1
+	iconst_0
+	goto L_while_end_1
+L_cmp_1:
+	iconst_1 
+	iconst_1 
+	ixor 
+	iconst_0 
+	iconst_1 
+	ixor 
+	iconst_1 
+	ixor 
+	iand
+	ior
+	ifne L_cmp_2
+	ldc "false"
+	goto L_cmp_3
+L_cmp_2:
+	ldc "true"
+L_cmp_3:
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
+
+	ldc "\n" 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
+	ldc 3
+	newarray float
+	astore 2
+	aload 2
+	ldc 0
+	ldc 1.100000
+	ldc 2.100000
+	fadd 
+	fastore 
+	aload 2
+	ldc 0
+	faload 
+	f2i 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(I)V
+	ldc "\n" 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
 	goto L_while_cmp_1
 L_while_end_1:
-L_loop_exit:
+	ldc 0 
+	istore 3
+	iload 3
+	ldc 10
+	iadd 
+	istore 3
+L_while_cmp_2:
+	iload 3
+	ldc 0
+	isub 
+	ifgt L_cmp_2
+	iconst_0
+	goto L_while_end_2
+L_cmp_2:
+	iload 3
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(I)V
+	ldc "\t" 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
+	iload 3
+	ldc 1
+	isub 
+	istore 3
+L_if_cmp_2:
+	iload 3
+	ldc 0
+	ldc 3.140000
+	fstore 4
+	fload 4
+	f2i 
+	iload 3
+	iadd 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(I)V
 L_loop_exit:
 	return
 .end method
