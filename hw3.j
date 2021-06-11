@@ -37,7 +37,7 @@ L_loop_exit:
 	iload 0
 	ldc 1
 	istore 0
-L_while_cmp_0:
+L_while_cmp_1:
 	iload 0
 	ldc 0
 	isub 
@@ -46,7 +46,7 @@ L_while_cmp_0:
 	goto L_loop_exit
 L_cmp_1:
 	iconst_1
-	goto L_cmp_2
+	goto L_cmp_1
 	iload 0
 	ldc 1
 	isub 
@@ -82,6 +82,9 @@ L_cmp_1:
 	getstatic java/lang/System/out Ljava/io/PrintStream;
 	swap
 	invokevirtual java/io/PrintStream/print(I)V
+	goto L_while_cmp_1
+L_while_end_1:
+L_loop_exit:
 L_loop_exit:
 	return
 .end method
