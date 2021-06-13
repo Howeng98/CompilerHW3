@@ -178,42 +178,26 @@ PrintStmt
 ;
 
 IfStmt    
-    : ELSE_Bracket Bracket StatementList IF_CLOSE1 ELSE {
-        // if condition with else        
-        dump_symbol();        
-        current_scope_level--;                
+    : IF_STAGE Bracket IF_OPEN1 StatementList IF_CLOSE1 {
+        // if condition without else                
+        if(strcmp($2,"bool")!=0 && strcmp($2,"TRUE")!=0 && strcmp($2,"FALSE")){
+            printf("error:%d: non-bool (type %s) used as for condition\n", yylineno+1, $2);
+        }
+        printf("scope_level: %d\n", current_scope_level);
+        // dump_symbol();        
+        // current_scope_level--;                
         if_state = true;
         INDENT--;
         codegen("L_else_cmp_%d:\n", compare_level-1);
         INDENT++;
-        // else_state = false;
+    }
+    | IF_STAGE Bracket IF_OPEN1 StatementList IF_CLOSE1 ELSE{
         
     }
 ;
 
-
-IF_CLOSE1
-    : '}' {
-        //FIXME: a little bit weird, 
-        // if meet IF,then this codegen won't work, but
-        // if meet IF-ELSE, then this codegen work.        
-        codegen("goto L_loop_exit\n");
-    }
-;
-
-ELSE_Bracket
-    : Bracket {
-        else_state = true;
-    }
-;
-
-LoopStmt
-    : ELSE_Bracket2 Bracket StatementList IF_CLOSE2 {        
-        // if condition without else        
-        dump_symbol();        
-        current_scope_level--;        
-    }
-    | FOR FOR_OPEN Expression FIRST_SEMICOLON Expression SECOND_SEMICOLON Expression FOR_CLOSE FOR_Bracket_OPEN StatementList FOR_Bracket_CLOSE {
+LoopStmt    
+    : FOR FOR_OPEN Expression FIRST_SEMICOLON Expression SECOND_SEMICOLON Expression FOR_CLOSE FOR_Bracket_OPEN StatementList FOR_Bracket_CLOSE {
         // for condition
         codegen("goto FOR_cmp2_%d\n", compare_level);
         INDENT--;        
@@ -225,15 +209,32 @@ LoopStmt
             printf("error:%d: non-bool (type %s) used as for condition\n", yylineno+1, $2);
         }                        
     }    
-    | IF_STAGE Bracket '{' StatementList '}'{
-        if(strcmp($2,"bool")!=0 && strcmp($2,"TRUE")!=0 && strcmp($2,"FALSE")){
-            printf("error:%d: non-bool (type %s) used as for condition\n", yylineno+1, $2);
-        }
-        
-        // INDENT--;
-        // codegen("L_cmp_%d:\n", compare_level);   
-        // INDENT++;
-        // compare_level++;
+    
+;
+
+IF_OPEN1 
+    : '{' {
+        current_scope_level++;
+    }
+
+IF_CLOSE1
+    : '}' {
+        dump_symbol();
+        current_scope_level--;
+        //FIXME: a little bit weird, 
+        // if meet IF,then this codegen won't work, but
+        // if meet IF-ELSE, then this codegen work.        
+        codegen("goto L_loop_exit\n");
+    }
+;
+
+IF_CLOSE2
+    : '}' {
+        //FIXME: a little bit weird, 
+        // if meet IF,then this codegen won't work, but
+        // if meet IF-ELSE, then this codegen work.        
+        if(else_state == true)
+            codegen("goto L_loop_exit\n");                
     }
 ;
 
@@ -254,7 +255,8 @@ WHILE_STAGE
 ;
 
 IF_STAGE
-    : IF {        
+    : IF {
+        compare_level++;
         INDENT--;
         codegen("L_if_cmp_%d:\n",compare_level);
         INDENT++;
@@ -279,23 +281,6 @@ WHILE_CLOSE
         current_scope_level--;    
     }
 ;
-
-ELSE_Bracket2
-    : Bracket {
-        else_state = false;
-    }
-;
-
-IF_CLOSE2
-    : '}' {
-        //FIXME: a little bit weird, 
-        // if meet IF,then this codegen won't work, but
-        // if meet IF-ELSE, then this codegen work.        
-        if(else_state == true)
-            codegen("goto L_loop_exit\n");                
-    }
-;
-
 
 FIRST_SEMICOLON
     : SEMICOLON {
@@ -805,12 +790,15 @@ CompareExpr
 
 
         if(if_state == true){
-            codegen("ifle L_cmp_%d\n",compare_level+1);
+            codegen("ifle L_cmp_%d\n",compare_level);
             codegen("iconst_0\n");
             if(else_state == true){
                 //got else
                 codegen("goto L_else_cmp_%d\n",compare_level);
             }
+            INDENT--;
+            codegen("L_cmp_%d:\n", compare_level);
+            INDENT++;
             if_state = false;
         }
         

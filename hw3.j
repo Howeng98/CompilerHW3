@@ -179,7 +179,7 @@ L_cmp_2:
 	ldc 1
 	isub 
 	istore 3
-L_if_cmp_2:
+L_if_cmp_3:
 	iload 3
 	ldc 0
 	ldc 3.140000
@@ -191,6 +191,78 @@ L_if_cmp_2:
 	getstatic java/lang/System/out Ljava/io/PrintStream;
 	swap
 	invokevirtual java/io/PrintStream/print(I)V
+	goto L_loop_exit
+	ldc 6.600000
+	fstore 5
+	ldc "If x == " 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
+	ldc 0
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(I)V
+	fload 5
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(F)V
+	goto L_while_cmp_3
+L_while_end_3:
+	ldc 1
+	istore 6
+L_while_cmp_3:
+	iload 6
+	ldc 3
+	isub 
+	ifle L_cmp_3
+	iconst_0
+L_cmp_3:
+	ifle L_cmp_3
+	iconst_0
+	goto L_while_end_3
+L_cmp_3:
+	ldc "\t" 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
+	iload 3
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(I)V
+	ldc "*" 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
+	iload 6
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(I)V
+	ldc "=" 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
+	iload 3
+	iload 6
+	imul 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(I)V
+	ldc "\t" 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
+	iload 6
+	iload 6
+	ldc 1
+	iadd 
+	istore 6
+	goto L_while_cmp_4
+L_while_end_4:
+	ldc "\n" 
+	getstatic java/lang/System/out Ljava/io/PrintStream;
+	swap
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
+L_loop_exit:
 L_loop_exit:
 	return
 .end method
