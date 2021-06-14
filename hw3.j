@@ -258,8 +258,8 @@ L_cmp_3:
 	ldc 1
 	iadd 
 	istore 6
-	goto L_while_cmp_4
-L_while_end_4:
+	goto L_while_cmp_3
+L_while_end_3:
 	ldc "\n" 
 	getstatic java/lang/System/out Ljava/io/PrintStream;
 	swap

@@ -231,13 +231,14 @@ IF_CLOSE1
 
 WHILE_STAGE
     : WHILE {
-        compare_level++;
+        
         if(check_ary[compare_level] == false)
             check_ary[compare_level] = true;
         else{
             compare_level++;
             check_ary[compare_level] = true;
         }
+        compare_level++;
         while_state = true; 
         INDENT--;
         codegen("L_while_cmp_%d:\n",compare_level);
@@ -831,8 +832,7 @@ CompareExpr
             // while_state = false;
             INDENT--;
             codegen("L_cmp_%d:\n", compare_level);
-            INDENT++;
-            compare_level++;
+            INDENT++;            
         }        
     }
     | Expression EQL Expression { 
