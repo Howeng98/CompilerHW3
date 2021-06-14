@@ -1,3 +1,14 @@
 {
-    "C_Cpp.errorSquiggles": "Disabled"
+    "C_Cpp.errorSquiggles": "Disabled",
+    "cSpell.words": [
+        "iadd",
+        "iand",
+        "iconst",
+        "ifne",
+        "ineg",
+        "ixor"
+    ],
+    "cSpell.ignoreWords": [
+        "ifgt"
+    ]
 }

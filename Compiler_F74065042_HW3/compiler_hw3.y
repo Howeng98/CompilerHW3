@@ -35,7 +35,6 @@
     bool else_state = false;
     bool while_state = false;
     bool check_ary[5] = {false};
-    bool got_error = false;
 
     void yyerror (char const *s)
     {
@@ -150,7 +149,6 @@ Program
     : StatementList {
         INDENT--;
         codegen("L_loop_exit:\n");
-        
         INDENT++;
     }
 ;
@@ -1018,8 +1016,7 @@ ID
     : IDENT {
         if(lookup_symbol($1) == -2){
             printf("error:%d: undefined: %s\n", yylineno, $1);
-            codegen("goto L_loop_exit\n");            
-            HAS_ERROR = true;
+            codegen("goto L_error_stage:\n");
         }
         else{
             printf("IDENT (name=%s, address=%d)\n", $1, lookup_symbol($1));
