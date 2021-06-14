@@ -192,6 +192,7 @@ L_if_cmp_3:
 	swap
 	invokevirtual java/io/PrintStream/print(I)V
 	goto L_loop_exit
+L_if_end_3:
 	ldc 6.600000
 	fstore 5
 	ldc "If x == " 
@@ -216,6 +217,7 @@ L_while_cmp_3:
 	isub 
 	ifle L_cmp_3
 	iconst_0
+	goto L_if_end_3
 L_cmp_3:
 	ifle L_cmp_3
 	iconst_0

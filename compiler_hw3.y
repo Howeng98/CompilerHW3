@@ -178,22 +178,18 @@ PrintStmt
 ;
 
 IfStmt    
-    : IF_STAGE Bracket IF_OPEN1 StatementList IF_CLOSE1 {
+    : IF_STAGE2 Bracket IF_OPEN1 StatementList IF_CLOSE1 {
         // if condition without else                
+        codegen("Here without else\n");
+
         if(strcmp($2,"bool")!=0 && strcmp($2,"TRUE")!=0 && strcmp($2,"FALSE")){
             printf("error:%d: non-bool (type %s) used as for condition\n", yylineno+1, $2);
-        }
-        printf("scope_level: %d\n", current_scope_level);
-        // dump_symbol();        
-        // current_scope_level--;                
+        }            
         if_state = true;
-        INDENT--;
-        codegen("L_else_cmp_%d:\n", compare_level-1);
-        INDENT++;
     }
-    | IF_STAGE Bracket IF_OPEN1 StatementList IF_CLOSE1 ELSE{
-        
-    }
+    | IF_STAGE Bracket IF_OPEN1 StatementList IFELSE_CLOSE ELSE_STAGE{                
+        if_state = true;
+    }    
 ;
 
 LoopStmt    
@@ -223,18 +219,13 @@ IF_CLOSE1
         current_scope_level--;
         //FIXME: a little bit weird, 
         // if meet IF,then this codegen won't work, but
-        // if meet IF-ELSE, then this codegen work.        
+        // if meet IF-ELSE, then this codegen work.
+        // if(else_state == true)    
         codegen("goto L_loop_exit\n");
-    }
-;
-
-IF_CLOSE2
-    : '}' {
-        //FIXME: a little bit weird, 
-        // if meet IF,then this codegen won't work, but
-        // if meet IF-ELSE, then this codegen work.        
-        if(else_state == true)
-            codegen("goto L_loop_exit\n");                
+        INDENT--;
+        codegen("L_if_end_%d:\n", compare_level);
+        INDENT++;
+        if_state = false;
     }
 ;
 
@@ -261,6 +252,36 @@ IF_STAGE
         codegen("L_if_cmp_%d:\n",compare_level);
         INDENT++;
         if_state = true;
+        else_state =true;        
+    }    
+;
+
+IF_STAGE2
+    : IF {
+        compare_level++;
+        INDENT--;
+        codegen("L_if_cmp_aaaaaaaaaaaaaaaaaa%d:\n",compare_level);
+        INDENT++;
+        if_state = true;
+        else_state =false;        
+    }    
+;
+
+ELSE_STAGE
+    : ELSE {
+        else_state = false;
+    }
+
+IFELSE_CLOSE
+    : '}' {
+        dump_symbol();
+        current_scope_level--;
+        // if(else_state == true)
+        codegen("goto L_loop_exit\n");
+        INDENT--;
+        codegen("L_if_end_%d:\n", compare_level);
+        INDENT++;
+        if_state = false;
     }
 ;
 
@@ -792,14 +813,15 @@ CompareExpr
         if(if_state == true){
             codegen("ifle L_cmp_%d\n",compare_level);
             codegen("iconst_0\n");
-            if(else_state == true){
+            //FIXME:  check else_state!!!!!!!!!!!11
+            // if(else_state == true){
                 //got else
-                codegen("goto L_else_cmp_%d\n",compare_level);
-            }
+
+            codegen("goto L_if_end_%d\n",compare_level);
+            // }
             INDENT--;
             codegen("L_cmp_%d:\n", compare_level);
-            INDENT++;
-            if_state = false;
+            INDENT++;            
         }
         
         if(while_state == true){
@@ -834,19 +856,22 @@ CompareExpr
         if(if_state == true){
             codegen("ifeq L_cmp_%d\n", compare_level);
             codegen("iconst_0\n");
+            
             if(else_state == false){
                 //if checker show that it is not if-else clause, then goto L_loop_exit when condition result is false
                 codegen("goto L_loop_exit\n");
             }
             else{
-                codegen("goto L_else_cmp_%d\n", compare_level);
+                codegen("goto L_if_cmp_%d\n", compare_level);
             }
-            
+            //FIXME: check else_state!!!
+            // codegen("goto L_if_end_%d\n",compare_level);
+
+
             INDENT--;
             codegen("L_cmp_%d:\n", compare_level);
             INDENT++;
-            codegen("iconst_1\n");
-            if_state = false;
+            codegen("iconst_1\n");            
         }
         else{
             compare_level++;        
